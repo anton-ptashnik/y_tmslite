@@ -13,3 +13,7 @@ func DelProject(w http.ResponseWriter, r *http.Request) {
 func ListProjects(w http.ResponseWriter, r *http.Request) {
 
 }
+
+func GetProject(w http.ResponseWriter, r *http.Request) {
+
+}

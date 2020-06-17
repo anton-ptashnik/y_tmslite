@@ -2,4 +2,4 @@ module y_finalproject
 
 go 1.14
 
-require github.com/go-chi/chi v4.1.2+incompatible // indirect
+require github.com/go-chi/chi v4.1.2+incompatible
