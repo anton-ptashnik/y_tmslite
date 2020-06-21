@@ -1,5 +1,8 @@
 package persistence
 
-func AddTask(task Task) uint {
-	return 0
+import "errors"
+
+func AddTask(task Task) (int64, error) {
+
+	return 0, errors.New("not implemented")
 }

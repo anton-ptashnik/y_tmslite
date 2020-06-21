@@ -13,3 +13,7 @@ func DelComment(w http.ResponseWriter, r *http.Request) {
 func ListComments(w http.ResponseWriter, r *http.Request) {
 
 }
+
+func UpdComment(w http.ResponseWriter, r *http.Request) {
+
+}

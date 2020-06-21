@@ -6,9 +6,10 @@ type Comment struct {
 	date   string
 }
 
-type Status struct {
-	name string
-	pos  uint
+type TaskStatus struct {
+	projID uint
+	name   string
+	seqNo  uint
 }
 
 type Priority struct {
@@ -16,14 +17,17 @@ type Priority struct {
 }
 
 type Task struct {
+	ID                int64
 	projID            uint
 	name, description string
-	status            Status
+	status            TaskStatus
 	priority          Priority
 	comments          []Comment
 }
 
 type Project struct {
+	ID                int64
 	name, description string
 	tasks             []Task
+	taskStatuses      []TaskStatus
 }

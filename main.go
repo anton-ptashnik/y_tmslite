@@ -15,17 +15,26 @@ func main() {
 		r.Get("/", middleware.ListProjects)
 		r.Get("/{id}", middleware.GetProject)
 		r.Delete("/{id}", middleware.DelProject)
+		r.Put("/{id}", middleware.UpdProject)
+		r.Route("/taskstatuses", func(r chi.Router) {
+			r.Post("/", middleware.AddTaskStatus)
+			r.Get("/", middleware.GetTaskStatuses)
+			r.Delete("/{tsid}", middleware.DelTaskStatus)
+			r.Put("/{tsid}", middleware.UpdTaskStatus)
+		})
 	})
 	r.Route("/tasks", func(r chi.Router) {
 		r.Post("/", middleware.AddTask)
-		r.Get("/{id}", middleware.GetTask)
 		r.Get("/", middleware.ListTasks)
+		r.Get("/{id}", middleware.GetTask)
 		r.Delete("/{id}", middleware.DelTask)
-	})
-	r.Route("/tasks/{tid}/comments", func(r chi.Router) {
-		r.Post("/", middleware.AddComment)
-		r.Get("/", middleware.ListComments)
-		r.Delete("/{cid}", middleware.DelComment)
+		r.Put("/{id}", middleware.UpdTask)
+		r.Route("/{id}/comments", func(r chi.Router) {
+			r.Post("/", middleware.AddComment)
+			r.Get("/", middleware.ListComments)
+			r.Delete("/{cid}", middleware.DelComment)
+			r.Put("/{cid}", middleware.UpdComment)
+		})
 	})
 	http.ListenAndServe(":9999", r)
 }
