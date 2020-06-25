@@ -3,12 +3,14 @@ package main
 import (
 	"github.com/go-chi/chi"
 	chiware "github.com/go-chi/chi/middleware"
+	_ "github.com/joho/godotenv/autoload"
 	"net/http"
 	"y_finalproject/middleware"
 )
 
 func main() {
 	r := chi.NewRouter()
+	r.Use(chiware.Logger)
 	r.Use(chiware.SetHeader("Content-Type", "application/json"))
 	r.Route("/projects", func(r chi.Router) {
 		r.Post("/", middleware.AddProject)
