@@ -2,6 +2,8 @@
 
 _It is an initial document ver._
 
+The project serves education purposes for learning backend-side development. API doc is located on: https://app.swaggerhub.com/apis/iDeveloper34/y_tmslite
+
 ## Project design
 
 ER diagram is located on: https://drive.google.com/drive/folders/12auxnZaop03MY_Ly653L4gV_t1Sh2J2Z?usp=sharing
