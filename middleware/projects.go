@@ -8,15 +8,25 @@ import (
 	"y_finalproject/persistence"
 )
 
+func initialStatus(pid int64) persistence.TaskStatus {
+	return persistence.TaskStatus{
+		PID:   pid,
+		Name:  "default",
+		SeqNo: 0,
+	}
+}
 func AddProject(w http.ResponseWriter, r *http.Request) {
+	//todo add transaction
 	var p persistence.Project
 	json.NewDecoder(r.Body).Decode(&p)
 	id, err := persistence.AddProject(p)
 	if err == nil {
-		createdOk(w, id)
+		_, err := persistence.AddTaskStatus(initialStatus(id))
+		if err == nil {
+			createdOk(w, id)
+		}
 	} else {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
+		reqFailed(w, err)
 	}
 }
 

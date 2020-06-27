@@ -14,10 +14,7 @@ func AddProject(p Project) (int64, error) {
 	q := `INSERT INTO projects (name, description) VALUES ($1,$2) RETURNING id`
 	var id int64
 	err := db.QueryRow(q, p.Name, p.Description).Scan(&id)
-	if err != nil {
-		return 0, err
-	}
-	return id, nil
+	return id, err
 }
 
 func ListProjects() ([]Project, error) {
@@ -47,28 +44,13 @@ func GetProject(id int64) (Project, error) {
 func UpdProject(p Project) error {
 	db := dbConn()
 	defer db.Close()
-	query := `UPDATE projects SET name=$2, description=$3 WHERE id=$1 returning id`
-	res, err := db.Exec(query, p.ID, p.Name, p.Description)
-	if err != nil {
-		return err
-	}
-	rowsAffected, _ := res.RowsAffected()
-	if rowsAffected == 0 {
-		return errNoMatch
-	}
-	return nil
+	query := `UPDATE projects SET name=$2, description=$3 WHERE id=$1`
+	return verifyModified(db.Exec(query, p.ID, p.Name, p.Description))
 }
 
 func DelProject(id int64) error {
 	db := dbConn()
 	defer db.Close()
-	query := `DELETE FROM projects WHERE id=$1 returning id`
-	res, err := db.Exec(query, id)
-	if err != nil {
-		return err
-	}
-	if rowsAffected, _ := res.RowsAffected(); rowsAffected == 0 {
-		return errors.New("no match")
-	}
-	return nil
+	query := `DELETE FROM projects WHERE id=$1`
+	return verifyModified(db.Exec(query, id))
 }

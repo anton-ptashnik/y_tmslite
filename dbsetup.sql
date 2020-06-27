@@ -6,11 +6,11 @@ CREATE TABLE projects (
 
 CREATE TABLE statuses (
     id SERIAL PRIMARY KEY,
-    proj_id INTEGER REFERENCES projects,
+    pid INTEGER REFERENCES projects ON DELETE CASCADE,
     seqNo INTEGER NOT NULL DEFAULT 0,
     name VARCHAR(255) NOT NULL,
-    UNIQUE(proj_id, seqNo),
-    UNIQUE(proj_id, name)
+    UNIQUE(pid, seqNo),
+    UNIQUE(pid, name)
 );
 
 CREATE TABLE priorities (

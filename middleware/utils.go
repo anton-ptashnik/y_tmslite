@@ -11,3 +11,8 @@ func createdOk(w http.ResponseWriter, id int64) {
 		ID int64
 	}{id})
 }
+
+func reqFailed(w http.ResponseWriter, err error) {
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte(err.Error()))
+}

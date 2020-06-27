@@ -8,10 +8,10 @@ type Comment struct {
 }
 
 type TaskStatus struct {
-	ID     int64
-	projID uint
-	name   string
-	seqNo  uint
+	ID    int64
+	PID   int64
+	Name  string
+	SeqNo int64
 }
 
 type Priority struct {
@@ -21,11 +21,11 @@ type Priority struct {
 
 type Task struct {
 	ID                int64
-	projID            uint
-	name, description string
-	status            TaskStatus
-	priority          Priority
-	comments          []Comment
+	PID               uint
+	Name, Description string
+	Status            TaskStatus
+	Priority          Priority
+	Comments          []Comment
 }
 
 type Project struct {
