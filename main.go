@@ -15,28 +15,30 @@ func main() {
 	r.Route("/projects", func(r chi.Router) {
 		r.Post("/", middleware.AddProject)
 		r.Get("/", middleware.ListProjects)
-		r.Get("/{id}", middleware.GetProject)
-		r.Delete("/{id}", middleware.DelProject)
-		r.Put("/{id}", middleware.UpdProject)
-		r.Route("/taskstatuses", func(r chi.Router) {
-			r.Post("/", middleware.AddTaskStatus)
-			r.Get("/", middleware.GetTaskStatuses)
-			r.Delete("/{tsid}", middleware.DelTaskStatus)
-			r.Put("/{tsid}", middleware.UpdTaskStatus)
-		})
+		r.Get("/{pid}", middleware.GetProject)
+		r.Delete("/{pid}", middleware.DelProject)
+		r.Put("/{pid}", middleware.UpdProject)
 	})
-	r.Route("/tasks", func(r chi.Router) {
+	r.Route("/projects/{pid}/statuses", func(r chi.Router) {
+		r.Post("/", middleware.AddTaskStatus)
+		r.Get("/", middleware.ListTaskStatuses)
+		r.Get("/{sid}", middleware.GetStatus)
+		r.Delete("/{sid}", middleware.DelTaskStatus)
+		r.Put("/{sid}", middleware.UpdTaskStatus)
+	})
+	r.Route("/projects/{pid}/tasks", func(r chi.Router) {
 		r.Post("/", middleware.AddTask)
 		r.Get("/", middleware.ListTasks)
-		r.Get("/{id}", middleware.GetTask)
-		r.Delete("/{id}", middleware.DelTask)
-		r.Put("/{id}", middleware.UpdTask)
-		r.Route("/{id}/comments", func(r chi.Router) {
-			r.Post("/", middleware.AddComment)
-			r.Get("/", middleware.ListComments)
-			r.Delete("/{cid}", middleware.DelComment)
-			r.Put("/{cid}", middleware.UpdComment)
-		})
+		r.Get("/{tid}", middleware.GetTask)
+		r.Delete("/{tid}", middleware.DelTask)
+		r.Put("/{tid}", middleware.UpdTask)
 	})
+	r.Route("/projects/{pid}/tasks/{tid}/comments", func(r chi.Router) {
+		r.Post("/", middleware.AddComment)
+		r.Get("/", middleware.ListComments)
+		r.Delete("/{cid}", middleware.DelComment)
+		r.Put("/{cid}", middleware.UpdComment)
+	})
+
 	http.ListenAndServe(":9999", r)
 }
