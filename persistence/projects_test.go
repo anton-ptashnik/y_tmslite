@@ -7,24 +7,28 @@ import (
 	"testing"
 )
 
-var db *sql.DB
+type projectsTest struct {
+	*sql.DB
+}
 
 func TestProjects(t *testing.T) {
-	db = dbConn()
+	db := dbConn()
 	defer db.Close()
-	entries, err := dbSetup()
+	ps := projectsTest{db}
+
+	entries, err := dbSetup(db)
 	if err != nil {
 		t.Fatal("preparation failed", err)
 	}
 
-	t.Run("list", testListProjects())
-	t.Run("get", testGetProject(entries))
-	t.Run("add", testAddProject)
-	t.Run("del", testDelProject(entries[0]))
-	t.Run("upd", testUpdProject(entries[1]))
+	t.Run("list", ps.listProjects())
+	t.Run("get", ps.getProject(entries))
+	t.Run("add", ps.addProject)
+	t.Run("del", ps.delProject(entries[0]))
+	t.Run("upd", ps.updProject(entries[1]))
 }
 
-func dbSetup() ([]Project, error) {
+func dbSetup(db *sql.DB) ([]Project, error) {
 	var p = Project{
 		Name:        "newp",
 		Description: "somethingverImportant",
@@ -43,7 +47,7 @@ func dbSetup() ([]Project, error) {
 	return res, nil
 }
 
-func testAddProject(t *testing.T) {
+func (ps *projectsTest) addProject(t *testing.T) {
 	p := Project{
 		Name:        "newp",
 		Description: "abc",
@@ -54,7 +58,7 @@ func testAddProject(t *testing.T) {
 	}
 }
 
-func testGetProject(projects []Project) func(t *testing.T) {
+func (ps *projectsTest) getProject(projects []Project) func(t *testing.T) {
 	return func(t *testing.T) {
 		for _, expectedProj := range projects {
 			actualProj, err := GetProject(expectedProj.ID)
@@ -68,40 +72,40 @@ func testGetProject(projects []Project) func(t *testing.T) {
 	}
 }
 
-func testDelProject(p Project) func(*testing.T) {
+func (ps *projectsTest) delProject(p Project) func(*testing.T) {
 	return func(t *testing.T) {
 		err := DelProject(p.ID)
 		if err != nil {
 			t.Error(err)
 		}
-		if dbCheckEntryExists(p) {
+		if dbCheckEntryExists(ps.DB, p) {
 			t.Error("failed to remove:", p)
 		}
 	}
 }
 
-func testListProjects() func(*testing.T) {
+func (ps *projectsTest) listProjects() func(*testing.T) {
 	return func(t *testing.T) {
 		list, err := ListProjects()
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, v := range list {
-			if !dbCheckEntryExists(v) {
+			if !dbCheckEntryExists(ps.DB, v) {
 				t.Error("expected entry is missing:", v)
 			}
 		}
 	}
 }
 
-func dbCheckEntryExists(expectedProj Project) bool {
+func dbCheckEntryExists(db *sql.DB, expectedProj Project) bool {
 	q := `select * from projects where id=$1`
 	var actualProj Project
 	err := db.QueryRow(q, expectedProj.ID).Scan(&actualProj.ID, &actualProj.Name, &actualProj.Description)
 	return err == nil && reflect.DeepEqual(expectedProj, actualProj)
 }
 
-func testUpdProject(p Project) func(t *testing.T) {
+func (ps *projectsTest) updProject(p Project) func(t *testing.T) {
 	upd := p
 	upd.Name += "_updated"
 	return func(t *testing.T) {
@@ -109,7 +113,7 @@ func testUpdProject(p Project) func(t *testing.T) {
 		if err != nil {
 			t.Error("update failed:", p)
 		}
-		if !dbCheckEntryExists(upd) {
+		if !dbCheckEntryExists(ps.DB, upd) {
 			t.Error("updated entry does not equal to expected:", upd)
 		}
 	}
