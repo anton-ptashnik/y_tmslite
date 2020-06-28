@@ -14,28 +14,27 @@ type projectsTest struct {
 func TestProjects(t *testing.T) {
 	db := dbConn()
 	defer db.Close()
-	ps := projectsTest{db}
-
-	entries, err := dbSetup(db)
+	tests := projectsTest{db}
+	projects, err := prepareProjects(db, 2)
 	if err != nil {
 		t.Fatal("preparation failed", err)
 	}
 
-	t.Run("list", ps.listProjects())
-	t.Run("get", ps.getProject(entries))
-	t.Run("add", ps.addProject)
-	t.Run("del", ps.delProject(entries[0]))
-	t.Run("upd", ps.updProject(entries[1]))
+	t.Run("list", tests.listProjects())
+	t.Run("get", tests.getProject(projects))
+	t.Run("add", tests.addProject)
+	t.Run("del", tests.delProject(projects[0]))
+	t.Run("upd", tests.updProject(projects[1]))
 }
 
-func dbSetup(db *sql.DB) ([]Project, error) {
+func prepareProjects(db *sql.DB, n int) ([]Project, error) {
 	var p = Project{
 		Name:        "newp",
 		Description: "somethingverImportant",
 	}
 	q := `INSERT INTO projects (name, description) VALUES ($1,$2) RETURNING id`
 	var res []Project
-	for i := 2; i > 0; i-- {
+	for i := n; i > 0; i-- {
 		pc := p
 		pc.Name += fmt.Sprint(i)
 		err := db.QueryRow(q, pc.Name, pc.Description).Scan(&pc.ID)
