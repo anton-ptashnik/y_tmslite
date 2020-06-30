@@ -52,15 +52,15 @@ func (test *taskTests) addTask(p Project, s TaskStatus, pri Priority) func(t *te
 		}
 	}
 }
-func (test *taskTests) getTask(expected []Task) func(*testing.T) {
+func (test *taskTests) getTask(expectedTasks []Task) func(*testing.T) {
 	return func(t *testing.T) {
-		for _, task := range expected {
-			actual, err := GetTask(task.ID)
+		for _, expectedTask := range expectedTasks {
+			actual, err := GetTask(expectedTask.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !reflect.DeepEqual(expected, actual) {
-				t.Error("expected/actual entry mismatch:", expected, actual)
+			if !reflect.DeepEqual(expectedTask, actual) {
+				t.Error("expected/actual entry mismatch:", expectedTask, actual)
 			}
 		}
 	}
@@ -144,11 +144,8 @@ func prepareTasks(db *sql.DB, p Project, s TaskStatus, pri Priority, n int) ([]T
 func checkTaskExists(db *sql.DB, expected Task) bool {
 	q := `SELECT * FROM tasks WHERE id=$1`
 	var actual Task
-	err := db.QueryRow(q, expected.ID).Scan(&actual.ID, &actual.ProjectID, &actual.StatusID, &actual.PriorityID, &actual.Name, &actual.Description)
-	if err != nil {
-		return false
-	}
-	return reflect.DeepEqual(expected, actual)
+	err := db.QueryRow(q, expected.ID).Scan(&actual.ID, &actual.StatusID, &actual.ProjectID, &actual.PriorityID, &actual.Name, &actual.Description)
+	return err == nil && reflect.DeepEqual(expected, actual)
 }
 
 func prepareTaskTests(db *sql.DB) (taskTestsInput, error) {
