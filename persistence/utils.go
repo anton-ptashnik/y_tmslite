@@ -1,6 +1,9 @@
 package persistence
 
-import "database/sql"
+import (
+	"database/sql"
+	"errors"
+)
 
 func verifyModified(r sql.Result, err error) error {
 	if err != nil {
@@ -12,3 +15,5 @@ func verifyModified(r sql.Result, err error) error {
 	}
 	return nil
 }
+
+var errNotImpl = errors.New("not implemented")

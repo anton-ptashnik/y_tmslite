@@ -2,7 +2,6 @@ package persistence
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -15,35 +14,43 @@ type statusesTests struct {
 func TestStatuses(t *testing.T) {
 	db := dbConn()
 	defer db.Close()
-	p, err := prepareStatuses(db)
+	projects, err := prepareProjects(db, 1)
+	if err != nil {
+		t.Fatal(fmt.Sprint("projects prep failed:", err))
+	}
+	project := projects[0]
+	statuses, err := prepareStatuses(db, project, 2)
 	if err != nil {
 		t.Fatal("setup failed:", err)
 	}
-	tests := statusesTests{db}
+	status := statuses[0]
 
-	t.Run("get", tests.getStatus(p.TaskStatuses[0]))
-	t.Run("add", tests.addStatus(p))
-	t.Run("del", tests.delStatus(p.TaskStatuses[0]))
+	tests := statusesTests{db}
+	t.Run("get", tests.getStatus(status))
+	t.Run("add", tests.addStatus(project))
+	t.Run("del", tests.delStatus(status))
 }
 
-func prepareStatuses(db *sql.DB) (Project, error) {
-	projects, err := prepareProjects(db, 1)
-	if err != nil {
-		return Project{}, errors.New(fmt.Sprint("projects prep failed:", err))
-	}
-	p := projects[0]
-	var status = TaskStatus{
+func prepareStatuses(db *sql.DB, p Project, n int) ([]TaskStatus, error) {
+	var baseStatus = TaskStatus{
 		PID:   p.ID,
 		Name:  "default",
 		SeqNo: 0,
 	}
 	q := `INSERT INTO statuses (pid, name, seqNo) VALUES ($1,$2,$3) RETURNING id`
-	err = db.QueryRow(q, status.PID, status.Name, status.SeqNo).Scan(&status.ID)
-	if err != nil {
-		return Project{}, err
+	var statuses []TaskStatus
+	for n > 0 {
+		n--
+		status := baseStatus
+		status.Name = fmt.Sprint(status.Name, n)
+		status.SeqNo = n
+		err := db.QueryRow(q, status.PID, status.Name, status.SeqNo).Scan(&status.ID)
+		if err != nil {
+			return statuses, err
+		}
+		statuses = append(statuses, status)
 	}
-	p.TaskStatuses = append(p.TaskStatuses, status)
-	return p, nil
+	return statuses, nil
 }
 
 func (st *statusesTests) getStatus(expected TaskStatus) func(t *testing.T) {

@@ -11,7 +11,7 @@ type TaskStatus struct {
 	ID    int64
 	PID   int64
 	Name  string
-	SeqNo int64
+	SeqNo int
 }
 
 type Priority struct {
@@ -21,16 +21,13 @@ type Priority struct {
 
 type Task struct {
 	ID                int64
-	PID               uint
+	ProjectID         int64
+	StatusID          int64
+	PriorityID        int64
 	Name, Description string
-	Status            TaskStatus
-	Priority          Priority
-	Comments          []Comment
 }
 
 type Project struct {
 	ID                int64
 	Name, Description string
-	Tasks             []Task       `json:",omitempty"`
-	TaskStatuses      []TaskStatus `json:",omitempty"`
 }

@@ -21,8 +21,10 @@ CREATE TABLE priorities (
 CREATE TABLE tasks (
     id SERIAL PRIMARY KEY,
     status_id INTEGER REFERENCES statuses ON DELETE RESTRICT,
+    project_id INTEGER REFERENCES projects ON DELETE CASCADE,
+    priority_id INTEGER REFERENCES priorities ON DELETE SET NULL,
     name VARCHAR(500) NOT NULL,
-    description VARCHAR (5000)
+    description VARCHAR(5000)
 );
 
 CREATE TABLE comments (
