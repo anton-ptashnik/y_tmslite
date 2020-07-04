@@ -6,6 +6,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"net/http"
 	"y_finalproject/middleware"
+	"y_finalproject/persistence"
 )
 
 func main() {
@@ -15,9 +16,9 @@ func main() {
 	r.Route("/projects", func(r chi.Router) {
 		r.Post("/", middleware.AddProject)
 		r.Get("/", middleware.ListProjects)
-		r.Get("/{pid}", middleware.GetProject)
-		r.Delete("/{pid}", middleware.DelProject)
-		r.Put("/{pid}", middleware.UpdProject)
+		r.Get("/{id}", middleware.GetProject)
+		r.Delete("/{id}", middleware.DelProject)
+		r.Put("/{id}", middleware.UpdProject)
 	})
 	r.Route("/projects/{pid}/statuses", func(r chi.Router) {
 		r.Post("/", middleware.AddTaskStatus)
@@ -27,11 +28,11 @@ func main() {
 		r.Put("/{sid}", middleware.UpdTaskStatus)
 	})
 	r.Route("/projects/{pid}/tasks", func(r chi.Router) {
-		r.Post("/", middleware.AddTask)
-		r.Get("/", middleware.ListTasks)
-		r.Get("/{tid}", middleware.GetTask)
-		r.Delete("/{tid}", middleware.DelTask)
-		r.Put("/{tid}", middleware.UpdTask)
+		r.Post("/", middleware.AddTask(persistence.AddTask))
+		r.Get("/", middleware.ListTasks(persistence.ListTasks))
+		r.Get("/{tid}", middleware.GetTask(persistence.GetTask))
+		r.Delete("/{tid}", middleware.DelTask(persistence.DelTask))
+		r.Put("/{tid}", middleware.UpdTask(persistence.UpdTask))
 	})
 	r.Route("/projects/{pid}/tasks/{tid}/comments", func(r chi.Router) {
 		r.Post("/", middleware.AddComment)

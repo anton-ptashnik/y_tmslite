@@ -67,7 +67,7 @@ func (test *taskTests) getTask(expectedTasks []Task) func(*testing.T) {
 }
 func (test *taskTests) listTasks(p Project) func(t *testing.T) {
 	return func(t *testing.T) {
-		expected, err := ListTasks(p)
+		expected, err := ListTasks(p.ID)
 		if err != nil {
 			t.Fatal(err)
 		}

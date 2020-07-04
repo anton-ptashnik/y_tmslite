@@ -19,11 +19,11 @@ func GetTask(id int64) (Task, error) {
 
 }
 
-func ListTasks(p Project) ([]Task, error) {
+func ListTasks(pid int64) ([]Task, error) {
 	q := `SELECT * FROM tasks WHERE project_id=$1`
 	db := dbConn()
 	defer db.Close()
-	rows, err := db.Query(q, p.ID)
+	rows, err := db.Query(q, pid)
 	if err != nil {
 		return nil, err
 	}
