@@ -16,4 +16,13 @@ func verifyModified(r sql.Result, err error) error {
 	return nil
 }
 
-var errNotImpl = errors.New("not implemented")
+var (
+	errNotImpl = errors.New("not implemented")
+	errNoMatch = errors.New("no matching entries")
+)
+
+func panicOnErr(err error) {
+	if err != nil {
+		panic(err)
+	}
+}

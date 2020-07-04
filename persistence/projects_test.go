@@ -77,7 +77,7 @@ func (ps *projectsTest) delProject(p Project) func(*testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if dbCheckEntryExists(ps.DB, p) {
+		if checkProjectExists(ps.DB, p) {
 			t.Error("failed to remove:", p)
 		}
 	}
@@ -90,14 +90,14 @@ func (ps *projectsTest) listProjects() func(*testing.T) {
 			t.Fatal(err)
 		}
 		for _, v := range list {
-			if !dbCheckEntryExists(ps.DB, v) {
+			if !checkProjectExists(ps.DB, v) {
 				t.Error("expected entry is missing:", v)
 			}
 		}
 	}
 }
 
-func dbCheckEntryExists(db *sql.DB, expectedProj Project) bool {
+func checkProjectExists(db *sql.DB, expectedProj Project) bool {
 	q := `select * from projects where id=$1`
 	var actualProj Project
 	err := db.QueryRow(q, expectedProj.ID).Scan(&actualProj.ID, &actualProj.Name, &actualProj.Description)
@@ -112,7 +112,7 @@ func (ps *projectsTest) updProject(p Project) func(t *testing.T) {
 		if err != nil {
 			t.Error("update failed:", p)
 		}
-		if !dbCheckEntryExists(ps.DB, upd) {
+		if !checkProjectExists(ps.DB, upd) {
 			t.Error("updated entry does not equal to expected:", upd)
 		}
 	}

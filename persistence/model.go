@@ -2,9 +2,9 @@ package persistence
 
 type Comment struct {
 	ID     int64
-	taskID uint
-	text   string
-	date   string
+	TaskID int64
+	Text   string
+	Date   string
 }
 
 type Status struct {

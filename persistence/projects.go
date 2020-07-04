@@ -1,13 +1,5 @@
 package persistence
 
-import (
-	"errors"
-)
-
-var (
-	errNoMatch = errors.New("no matching entries")
-)
-
 func AddProject(p Project) (int64, error) {
 	db := dbConn()
 	defer db.Close()
