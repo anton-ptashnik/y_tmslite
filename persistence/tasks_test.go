@@ -13,7 +13,7 @@ type taskTests struct {
 
 type taskTestsInput struct {
 	p     Project
-	s     TaskStatus
+	s     Status
 	pri   Priority
 	tasks []Task
 }
@@ -33,7 +33,7 @@ func TestTasks(t *testing.T) {
 	t.Run("upd", tests.updTask(input.tasks[0]))
 	t.Run("del", tests.delTask(input.tasks[0]))
 }
-func (test *taskTests) addTask(p Project, s TaskStatus, pri Priority) func(t *testing.T) {
+func (test *taskTests) addTask(p Project, s Status, pri Priority) func(t *testing.T) {
 	newTask := Task{
 		ProjectID:   p.ID,
 		StatusID:    s.ID,
@@ -121,7 +121,7 @@ func preparePriorities(db *sql.DB, n int) ([]Priority, error) {
 	return res, nil
 }
 
-func prepareTasks(db *sql.DB, p Project, s TaskStatus, pri Priority, n int) ([]Task, error) {
+func prepareTasks(db *sql.DB, p Project, s Status, pri Priority, n int) ([]Task, error) {
 	baseTask := Task{
 		ProjectID:   p.ID,
 		StatusID:    s.ID,

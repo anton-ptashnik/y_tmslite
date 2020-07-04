@@ -8,8 +8,8 @@ import (
 	"y_finalproject/persistence"
 )
 
-func initialStatus(pid int64) persistence.TaskStatus {
-	return persistence.TaskStatus{
+func initialStatus(pid int64) persistence.Status {
+	return persistence.Status{
 		PID:   pid,
 		Name:  "default",
 		SeqNo: 0,

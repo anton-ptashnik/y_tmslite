@@ -10,7 +10,7 @@ import (
 
 func AddTaskStatus(w http.ResponseWriter, r *http.Request) {
 	pid, _ := strconv.Atoi(chi.URLParam(r, "pid"))
-	var d persistence.TaskStatus
+	var d persistence.Status
 	json.NewDecoder(r.Body).Decode(&d)
 	d.PID = int64(pid)
 	id, err := persistence.AddTaskStatus(d)
@@ -31,7 +31,7 @@ func DelTaskStatus(w http.ResponseWriter, r *http.Request) {
 
 func UpdTaskStatus(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "sid"))
-	var s persistence.TaskStatus
+	var s persistence.Status
 	json.NewDecoder(r.Body).Decode(&s)
 	s.ID = int64(id)
 	if err := persistence.UpdStatus(s); err != nil {

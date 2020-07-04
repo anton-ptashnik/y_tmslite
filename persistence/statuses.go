@@ -1,6 +1,6 @@
 package persistence
 
-func AddTaskStatus(s TaskStatus) (int64, error) {
+func AddTaskStatus(s Status) (int64, error) {
 	db := dbConn()
 	defer db.Close()
 	q := "INSERT INTO statuses (pid, seqNo, name) VALUES ($1,$2,$3) RETURNING id"
@@ -16,16 +16,16 @@ func DelTaskStatus(id int64) error {
 	return verifyModified(db.Exec(query, id))
 }
 
-func GetTaskStatus(id int64) (TaskStatus, error) {
+func GetTaskStatus(id int64) (Status, error) {
 	db := dbConn()
 	defer db.Close()
 	q := "SELECT * FROM statuses WHERE id=$1"
-	var d TaskStatus
+	var d Status
 	err := db.QueryRow(q, id).Scan(&d.ID, &d.PID, &d.SeqNo, &d.Name)
 	return d, err
 }
 
-func ListStatuses(projectID int64) ([]TaskStatus, error) {
+func ListStatuses(projectID int64) ([]Status, error) {
 	db := dbConn()
 	defer db.Close()
 	q := "SELECT * FROM statuses WHERE pid=$1"
@@ -34,8 +34,8 @@ func ListStatuses(projectID int64) ([]TaskStatus, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var res []TaskStatus
-	var d TaskStatus
+	var res []Status
+	var d Status
 	for rows.Next() {
 		rows.Scan(&d.ID, &d.PID, &d.SeqNo, &d.Name)
 		res = append(res, d)
@@ -43,7 +43,7 @@ func ListStatuses(projectID int64) ([]TaskStatus, error) {
 	return res, nil
 }
 
-func UpdStatus(s TaskStatus) error {
+func UpdStatus(s Status) error {
 	db := dbConn()
 	defer db.Close()
 	query := `UPDATE statuses SET seqNo=$2,name=$3 WHERE id=$1`

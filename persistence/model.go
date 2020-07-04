@@ -7,7 +7,7 @@ type Comment struct {
 	date   string
 }
 
-type TaskStatus struct {
+type Status struct {
 	ID    int64
 	PID   int64
 	Name  string

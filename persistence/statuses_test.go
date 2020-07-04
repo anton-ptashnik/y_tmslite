@@ -31,14 +31,14 @@ func TestStatuses(t *testing.T) {
 	t.Run("del", tests.delStatus(status))
 }
 
-func prepareStatuses(db *sql.DB, p Project, n int) ([]TaskStatus, error) {
-	var baseStatus = TaskStatus{
+func prepareStatuses(db *sql.DB, p Project, n int) ([]Status, error) {
+	var baseStatus = Status{
 		PID:   p.ID,
 		Name:  "default",
 		SeqNo: 0,
 	}
 	q := `INSERT INTO statuses (pid, name, seqNo) VALUES ($1,$2,$3) RETURNING id`
-	var statuses []TaskStatus
+	var statuses []Status
 	for n > 0 {
 		n--
 		status := baseStatus
@@ -53,7 +53,7 @@ func prepareStatuses(db *sql.DB, p Project, n int) ([]TaskStatus, error) {
 	return statuses, nil
 }
 
-func (st *statusesTests) getStatus(expected TaskStatus) func(t *testing.T) {
+func (st *statusesTests) getStatus(expected Status) func(t *testing.T) {
 	return func(t *testing.T) {
 		actual, err := GetTaskStatus(expected.ID)
 		if err != nil {
@@ -67,7 +67,7 @@ func (st *statusesTests) getStatus(expected TaskStatus) func(t *testing.T) {
 
 func (st *statusesTests) addStatus(p Project) func(t *testing.T) {
 	return func(t *testing.T) {
-		s := TaskStatus{
+		s := Status{
 			PID:   p.ID,
 			Name:  "newstatus",
 			SeqNo: 2,
@@ -83,7 +83,7 @@ func (st *statusesTests) addStatus(p Project) func(t *testing.T) {
 	}
 }
 
-func (st *statusesTests) delStatus(s TaskStatus) func(t *testing.T) {
+func (st *statusesTests) delStatus(s Status) func(t *testing.T) {
 	return func(t *testing.T) {
 		err := DelTaskStatus(s.ID)
 		if err != nil {
@@ -95,11 +95,11 @@ func (st *statusesTests) delStatus(s TaskStatus) func(t *testing.T) {
 	}
 }
 
-func checkStatusExists(expected TaskStatus) bool {
+func checkStatusExists(expected Status) bool {
 	db := dbConn()
 	defer db.Close()
 	q := `SELECT * FROM statuses WHERE id=$1`
-	var actual TaskStatus
+	var actual Status
 	err := db.QueryRow(q, expected.ID).Scan(&actual.ID, &actual.PID, &actual.SeqNo, &actual.Name)
 	return err == nil && reflect.DeepEqual(expected, actual)
 }
