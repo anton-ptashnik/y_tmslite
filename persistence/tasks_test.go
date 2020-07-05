@@ -19,8 +19,10 @@ type taskTestsInput struct {
 }
 
 func TestTasks(t *testing.T) {
-	db := dbConn()
+	_, err := InitDb()
+	panicOnErr(err)
 	defer db.Close()
+
 	input, err := prepareTaskTests(db)
 	if err != nil {
 		t.Fatal(err)

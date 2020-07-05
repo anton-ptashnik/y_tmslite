@@ -10,6 +10,12 @@ import (
 )
 
 func main() {
+	db, err := persistence.InitDb()
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
 	r := chi.NewRouter()
 	r.Use(chiware.Logger)
 	r.Use(chiware.SetHeader("Content-Type", "application/json"))

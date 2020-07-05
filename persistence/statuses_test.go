@@ -12,7 +12,8 @@ type statusesTests struct {
 }
 
 func TestStatuses(t *testing.T) {
-	db := dbConn()
+	_, err := InitDb()
+	panicOnErr(err)
 	defer db.Close()
 	projects, err := prepareProjects(db, 1)
 	if err != nil {
@@ -96,8 +97,6 @@ func (st *statusesTests) delStatus(s Status) func(t *testing.T) {
 }
 
 func checkStatusExists(expected Status) bool {
-	db := dbConn()
-	defer db.Close()
 	q := `SELECT * FROM statuses WHERE id=$1`
 	var actual Status
 	err := db.QueryRow(q, expected.ID).Scan(&actual.ID, &actual.PID, &actual.SeqNo, &actual.Name)

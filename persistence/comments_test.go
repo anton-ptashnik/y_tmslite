@@ -8,14 +8,10 @@ import (
 )
 
 func TestComments(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	tests := commentTests{dbConn()}
-	defer tests.DB.Close()
+	_, err := InitDb()
+	panicOnErr(err)
+	defer db.Close()
+	tests := commentTests{db}
 
 	data := tests.prepareInput()
 
