@@ -2,10 +2,15 @@ package middleware
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi"
 	"net/http"
 	"strconv"
 	"y_finalproject/persistence"
+)
+
+var (
+	errLastStatus = errors.New("last status cannot be deleted")
 )
 
 func AddTaskStatus(w http.ResponseWriter, r *http.Request) {
@@ -22,10 +27,21 @@ func AddTaskStatus(w http.ResponseWriter, r *http.Request) {
 
 }
 func DelTaskStatus(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.Atoi(chi.URLParam(r, "sid"))
-	if err := persistence.DelTaskStatus(int64(id)); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
+	// todo introduce service layer delete operation
+	pid, _ := strconv.Atoi(chi.URLParam(r, "pid"))
+	sid, _ := strconv.Atoi(chi.URLParam(r, "sid"))
+	statuses, err := persistence.ListStatuses(int64(pid))
+	if err != nil {
+		reqFailed(w, err)
+		return
+	}
+	if len(statuses) == 1 && statuses[0].ID == int64(sid) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(errLastStatus.Error()))
+		return
+	}
+	if err := persistence.DelTaskStatus(int64(sid)); err != nil {
+		reqFailed(w, err)
 	}
 }
 
