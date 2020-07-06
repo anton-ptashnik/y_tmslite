@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"y_finalproject/middleware"
 	"y_finalproject/persistence"
+	"y_finalproject/service"
 )
 
 func main() {
@@ -19,6 +20,9 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(chiware.Logger)
 	r.Use(chiware.SetHeader("Content-Type", "application/json"))
+
+	statusesHandler := initStatusesHandler()
+
 	r.Route("/projects", func(r chi.Router) {
 		r.Post("/", middleware.AddProject)
 		r.Get("/", middleware.ListProjects)
@@ -27,11 +31,11 @@ func main() {
 		r.Put("/{id}", middleware.UpdProject)
 	})
 	r.Route("/projects/{pid}/statuses", func(r chi.Router) {
-		r.Post("/", middleware.AddTaskStatus)
-		r.Get("/", middleware.ListTaskStatuses)
-		r.Get("/{sid}", middleware.GetStatus)
-		r.Delete("/{sid}", middleware.DelTaskStatus)
-		r.Put("/{sid}", middleware.UpdTaskStatus)
+		r.Post("/", statusesHandler.AddStatus)
+		r.Get("/", statusesHandler.ListTaskStatuses)
+		r.Get("/{sid}", statusesHandler.GetStatus)
+		r.Delete("/{sid}", statusesHandler.DelStatus)
+		r.Put("/{sid}", statusesHandler.UpdStatus)
 	})
 	r.Route("/projects/{pid}/tasks", func(r chi.Router) {
 		r.Post("/", middleware.AddTask(persistence.AddTask))
@@ -48,4 +52,10 @@ func main() {
 	})
 
 	http.ListenAndServe(":9999", r)
+}
+
+func initStatusesHandler() middleware.StatusesHandler {
+	r := persistence.StatusesRepo{}
+	s := service.StatusesService{&r}
+	return middleware.StatusesHandler{s}
 }
