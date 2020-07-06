@@ -22,7 +22,7 @@ func GetComment(id int64) (Comment, error) {
 func ListComments(taskID int64) ([]Comment, error) {
 	db := dbConn()
 	defer db.Close()
-	q := `SELECT * FROM comments WHERE task_id=$1`
+	q := `SELECT * FROM comments WHERE task_id=$1 ORDER BY modified DESC`
 	rows, _ := db.Query(q, taskID)
 	var comments []Comment
 	var c Comment
