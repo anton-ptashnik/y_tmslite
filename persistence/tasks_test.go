@@ -57,7 +57,7 @@ func (test *taskTests) addTask(p Project, s Status, pri Priority) func(t *testin
 func (test *taskTests) getTask(expectedTasks []Task) func(*testing.T) {
 	return func(t *testing.T) {
 		for _, expectedTask := range expectedTasks {
-			actual, err := GetTask(expectedTask.ID)
+			actual, err := Get(expectedTask.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -69,7 +69,7 @@ func (test *taskTests) getTask(expectedTasks []Task) func(*testing.T) {
 }
 func (test *taskTests) listTasks(p Project) func(t *testing.T) {
 	return func(t *testing.T) {
-		expected, err := ListTasks(p.ID)
+		expected, err := List(p.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -82,7 +82,7 @@ func (test *taskTests) listTasks(p Project) func(t *testing.T) {
 }
 func (test *taskTests) delTask(task Task) func(t *testing.T) {
 	return func(t *testing.T) {
-		err := DelTask(task.ID)
+		err := Del(task.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -96,7 +96,7 @@ func (test *taskTests) updTask(task Task) func(t *testing.T) {
 	return func(t *testing.T) {
 		updTask := task
 		updTask.Name += "_updated"
-		err := UpdTask(updTask)
+		err := Upd(updTask)
 		if err != nil {
 			t.Fatal(err)
 		}

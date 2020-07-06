@@ -1,6 +1,8 @@
 package persistence
 
-func AddTask(t Task) (int64, error) {
+type TasksRepo struct{}
+
+func (r *TasksRepo) Add(t Task) (int64, error) {
 	q := `INSERT INTO tasks (name,description,status_id,project_id,priority_id) VALUES ($1,$2,$3,$4,$5) RETURNING id`
 
 	var id int64
@@ -8,7 +10,7 @@ func AddTask(t Task) (int64, error) {
 	return id, err
 }
 
-func GetTask(id int64) (Task, error) {
+func (r *TasksRepo) Get(id int64, pid int64) (Task, error) {
 	q := `SELECT * FROM tasks WHERE id=$1`
 
 	var task Task
@@ -17,7 +19,7 @@ func GetTask(id int64) (Task, error) {
 
 }
 
-func ListTasks(pid int64) ([]Task, error) {
+func (r *TasksRepo) List(pid int64) ([]Task, error) {
 	q := `SELECT * FROM tasks WHERE project_id=$1`
 
 	rows, err := db.Query(q, pid)
@@ -37,14 +39,14 @@ func ListTasks(pid int64) ([]Task, error) {
 	return tasks, nil
 }
 
-func DelTask(id int64) error {
+func (r *TasksRepo) Del(id int64, pid int64) error {
 	q := `DELETE FROM tasks WHERE id=$1`
 
 	res, err := db.Exec(q, id)
 	return verifyModified(res, err)
 }
 
-func UpdTask(t Task) error {
+func (r *TasksRepo) Upd(t Task) error {
 	q := `UPDATE tasks SET name=$1,description=$2,status_id=$3,priority_id=$4 WHERE id=$5`
 
 	res, err := db.Exec(q, t.Name, t.Description, t.StatusID, t.PriorityID, t.ID)

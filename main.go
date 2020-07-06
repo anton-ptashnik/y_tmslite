@@ -22,9 +22,9 @@ func main() {
 	r.Use(chiware.SetHeader("Content-Type", "application/json"))
 
 	statusesHandler := initStatusesHandler()
-
+	tasksHandler := initTasksHandler()
 	r.Route("/projects", func(r chi.Router) {
-		r.Post("/", middleware.AddProject)
+		r.Post("/", middleware.AddProject(statusesHandler.Add))
 		r.Get("/", middleware.ListProjects)
 		r.Get("/{id}", middleware.GetProject)
 		r.Delete("/{id}", middleware.DelProject)
@@ -38,11 +38,11 @@ func main() {
 		r.Put("/{sid}", statusesHandler.UpdStatus)
 	})
 	r.Route("/projects/{pid}/tasks", func(r chi.Router) {
-		r.Post("/", middleware.AddTask(persistence.AddTask))
-		r.Get("/", middleware.ListTasks(persistence.ListTasks))
-		r.Get("/{tid}", middleware.GetTask(persistence.GetTask))
-		r.Delete("/{tid}", middleware.DelTask(persistence.DelTask))
-		r.Put("/{tid}", middleware.UpdTask(persistence.UpdTask))
+		r.Post("/", tasksHandler.AddTask)
+		r.Get("/", tasksHandler.ListTasks)
+		r.Get("/{tid}", tasksHandler.GetTask)
+		r.Delete("/{tid}", tasksHandler.DelTask)
+		r.Put("/{tid}", tasksHandler.UpdTask)
 	})
 	r.Route("/projects/{pid}/tasks/{tid}/comments", func(r chi.Router) {
 		r.Post("/", middleware.AddComment)
@@ -58,4 +58,10 @@ func initStatusesHandler() middleware.StatusesHandler {
 	r := persistence.StatusesRepo{}
 	s := service.StatusesService{&r}
 	return middleware.StatusesHandler{s}
+}
+
+func initTasksHandler() middleware.TasksHandler {
+	r := persistence.TasksRepo{}
+	s := service.TasksService{&r}
+	return middleware.TasksHandler{s}
 }

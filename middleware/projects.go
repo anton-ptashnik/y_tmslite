@@ -15,21 +15,25 @@ func initialStatus(pid int64) persistence.Status {
 		SeqNo: 0,
 	}
 }
-func AddProject(w http.ResponseWriter, r *http.Request) {
-	//todo add transaction
-	var p persistence.Project
-	json.NewDecoder(r.Body).Decode(&p)
-	id, err := persistence.AddProject(p)
-	if err == nil {
-		_, err := persistence.AddTaskStatus(initialStatus(id))
+
+type insertStatusOp func(s persistence.Status) (int64, error)
+
+func AddProject(insertOp insertStatusOp) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//todo add transaction
+		var p persistence.Project
+		json.NewDecoder(r.Body).Decode(&p)
+		id, err := persistence.AddProject(p)
 		if err == nil {
-			createdOk(w, id)
+			_, err := insertOp(initialStatus(id))
+			if err == nil {
+				createdOk(w, id)
+			}
+		} else {
+			reqFailed(w, err)
 		}
-	} else {
-		reqFailed(w, err)
 	}
 }
-
 func DelProject(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	if err := persistence.DelProject(int64(id)); err != nil {

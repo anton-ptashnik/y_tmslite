@@ -63,7 +63,7 @@ func (h *StatusesHandler) ListTaskStatuses(w http.ResponseWriter, r *http.Reques
 
 func (h *StatusesHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "sid"))
-	status, err := h.StatusesService.Get(int64(id))
+	status, err := h.StatusesService.Get(int64(id), 0)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	} else {
