@@ -31,3 +31,61 @@ func (s *StatusesService) Del(sid int64, pid int64) error {
 	}
 	return s.StatusesRepo.Del(sid, pid)
 }
+
+func (s *StatusesService) SetSeqNo(sid int64, pid int64, newSeqNo int) error {
+	// todo refactor
+	targetStatus, err := s.StatusesRepo.Get(sid, pid)
+	if err != nil {
+		return err
+	}
+	if targetStatus.SeqNo == newSeqNo {
+		return nil
+	}
+
+	var di int
+	var fIndex, lIndex int
+	if newSeqNo > targetStatus.SeqNo {
+		di = -1
+		fIndex = targetStatus.SeqNo + 1
+		lIndex = newSeqNo
+	} else {
+		di = 1
+		fIndex = newSeqNo
+		lIndex = targetStatus.SeqNo - 1
+	}
+	toBeMoved, err := s.listBySeqNo(pid, fIndex, lIndex)
+	if err != nil {
+		return err
+	}
+
+	for i := range toBeMoved {
+		toBeMoved[i].SeqNo += di
+	}
+	targetStatus.SeqNo = newSeqNo
+	toBeMoved = append(toBeMoved, targetStatus)
+
+	for _, se := range toBeMoved {
+		err := s.StatusesRepo.Upd(se)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *StatusesService) listBySeqNo(pid int64, l int, r int) ([]persistence.Status, error) {
+	all, err := s.StatusesRepo.List(pid)
+	if err != nil {
+		return nil, err
+	}
+	if r > len(all) {
+		return nil, errors.New("invalid seqNo")
+	}
+	var filtered []persistence.Status
+	for _, s := range all {
+		if s.SeqNo >= l && s.SeqNo <= r {
+			filtered = append(filtered, s)
+		}
+	}
+	return filtered, nil
+}
