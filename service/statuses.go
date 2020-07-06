@@ -11,10 +11,10 @@ var (
 
 type StatusesRepo interface {
 	List(pid int64) ([]persistence.Status, error)
-	Del(id int64) error
+	Del(id int64, pid int64) error
 	Add(persistence.Status) (int64, error)
 	Upd(persistence.Status) error
-	Get(id int64) (persistence.Status, error)
+	Get(id int64, pid int64) (persistence.Status, error)
 }
 
 type StatusesService struct {
@@ -29,5 +29,5 @@ func (s *StatusesService) Del(sid int64, pid int64) error {
 	if len(statuses) == 1 && statuses[0].ID == sid {
 		return errLastStatus
 	}
-	return s.StatusesRepo.Del(sid)
+	return s.StatusesRepo.Del(sid, pid)
 }

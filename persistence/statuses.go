@@ -9,13 +9,12 @@ func (r *StatusesRepo) Add(s Status) (int64, error) {
 	err := db.QueryRow(q, s.PID, s.SeqNo, s.Name).Scan(&id)
 	return id, err
 }
-func (r *StatusesRepo) Del(id int64) error {
-
+func (r *StatusesRepo) Del(id int64, pid int64) error {
 	query := `DELETE FROM statuses WHERE id=$1`
 	return verifyModified(db.Exec(query, id))
 }
 
-func (r *StatusesRepo) Get(id int64) (Status, error) {
+func (r *StatusesRepo) Get(id int64, pid int64) (Status, error) {
 
 	q := "SELECT * FROM statuses WHERE id=$1"
 	var d Status
