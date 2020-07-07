@@ -17,8 +17,11 @@ type StatusesRepo interface {
 	Get(id int64, pid int64) (persistence.Status, error)
 }
 
+type SetNewStatusOp func(oldSid int64, newSid int64, pid int64) error
+
 type StatusesService struct {
 	StatusesRepo
+	SetNewStatusOp
 }
 
 func (s *StatusesService) Del(sid int64, pid int64) error {
@@ -28,6 +31,27 @@ func (s *StatusesService) Del(sid int64, pid int64) error {
 	}
 	if len(statuses) == 1 && statuses[0].ID == sid {
 		return errLastStatus
+	}
+	statusToBeDel, err := s.StatusesRepo.Get(sid, pid)
+	if err != nil {
+		return nil
+	}
+	var newSeqNo int
+	if statusToBeDel.SeqNo == 1 {
+		newSeqNo = 2
+	} else {
+		newSeqNo = statusToBeDel.SeqNo - 1
+	}
+	var targetStatusID int64
+	for _, v := range statuses {
+		if v.SeqNo == newSeqNo {
+			targetStatusID = v.ID
+			break
+		}
+	}
+	err = s.SetNewStatusOp(sid, targetStatusID, pid)
+	if err != nil {
+		return err
 	}
 	return s.StatusesRepo.Del(sid, pid)
 }
