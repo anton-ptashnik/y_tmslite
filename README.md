@@ -1,13 +1,20 @@
 # TMS lite
 
-The project serves education purposes for learning backend-side development. API doc is located on: https://app.swaggerhub.com/apis/iDeveloper34/y_tmslite
+The project serves education purposes for learning backend-side development.
 
-## Startup
-In order to start the app open a terminal in project root dir and use commands:
+Up-to-date project version is located at `release` branch.
+## Usage
+API doc: https://app.swaggerhub.com/apis/iDeveloper34/y_tmslite
+
+The project is deployed at: https://y-tmslite.herokuapp.com
+
+In case of need to run locally, open a terminal in project root dir and use commands:
 
 ```set DB_URL=<actual_url>```
 
-```go run```
+```set PORT=<desired_port>```
+
+```go run .```
 
 ## Project design
 
