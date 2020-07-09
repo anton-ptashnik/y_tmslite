@@ -53,6 +53,10 @@ func (s *StatusesService) Del(sid int64, pid int64) error {
 	if err != nil {
 		return err
 	}
+	err = s.SetSeqNo(sid, pid, len(statuses))
+	if err != nil {
+		return err
+	}
 	return s.StatusesRepo.Del(sid, pid)
 }
 
@@ -112,4 +116,18 @@ func (s *StatusesService) listBySeqNo(pid int64, l int, r int) ([]persistence.St
 		}
 	}
 	return filtered, nil
+}
+
+func (s *StatusesService) Upd(upd persistence.Status) error {
+	current, err := s.Get(upd.ID, upd.PID)
+	if err != nil {
+		return err
+	}
+	if current.SeqNo != upd.SeqNo {
+		err := s.SetSeqNo(upd.ID, upd.PID, upd.SeqNo)
+		if err != nil {
+			return err
+		}
+	}
+	return s.StatusesRepo.Upd(upd)
 }
