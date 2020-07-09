@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/go-chi/chi"
 	chiware "github.com/go-chi/chi/middleware"
 	_ "github.com/joho/godotenv/autoload"
 	"net/http"
+	"os"
 	"y_finalproject/middleware"
 	"y_finalproject/persistence"
 )
@@ -52,5 +54,5 @@ func main() {
 		r.Put("/{cid}", middleware.UpdComment)
 	})
 
-	http.ListenAndServe(":9999", r)
+	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(`PORT`)), r)
 }
