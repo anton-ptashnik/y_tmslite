@@ -50,6 +50,7 @@ func main() {
 	r.Route("/projects/{pid}/tasks/{tid}/comments", func(r chi.Router) {
 		r.Post("/", middleware.AddComment)
 		r.Get("/", middleware.ListComments)
+		r.Get("/{cid}", middleware.GetComment)
 		r.Delete("/{cid}", middleware.DelComment)
 		r.Put("/{cid}", middleware.UpdComment)
 	})
