@@ -21,7 +21,9 @@ func (h *TasksHandler) AddTask(w http.ResponseWriter, r *http.Request) {
 	var t persistence.Task
 	json.NewDecoder(r.Body).Decode(&t)
 	pid, _ := strconv.Atoi(chi.URLParam(r, "pid"))
+	sid, _ := strconv.Atoi(chi.URLParam(r, "sid"))
 	t.ProjectID = int64(pid)
+	t.StatusID = int64(sid)
 	id, err := h.TasksService.Add(t)
 	if err != nil {
 		reqFailed(w, err)
