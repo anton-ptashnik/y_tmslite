@@ -2,7 +2,6 @@ package persistence
 
 import (
 	"database/sql"
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -13,7 +12,7 @@ func TestComments(t *testing.T) {
 	defer db.Close()
 	tests := commentTests{db}
 
-	data := tests.prepareInput()
+	data := tests.prepareCommentTestsInput()
 
 	t.Run("get", tests.get(data.comments[0]))
 	t.Run("list", tests.list(data.task.ID))
@@ -31,26 +30,7 @@ type commentTestsInput struct {
 	comments []Comment
 }
 
-func prepareComments(db *sql.DB, taskID int64, n int) []Comment {
-	q := `INSERT INTO comments (text,task_id) VALUES ($1,$2) RETURNING id`
-	baseText := "testcomment_"
-	var res []Comment
-	for n > 0 {
-		n--
-		comment := Comment{
-			TaskID: taskID,
-			Text:   fmt.Sprint(baseText, n),
-		}
-		err := db.QueryRow(q, comment.Text, comment.TaskID).Scan(&comment.ID)
-		if err != nil {
-			panic(err)
-		}
-		res = append(res, comment)
-	}
-	return res
-}
-
-func (test *commentTests) prepareInput() commentTestsInput {
+func (test *commentTests) prepareCommentTestsInput() commentTestsInput {
 	projects, err := prepareProjects(test.DB, 1)
 	panicOnErr(err)
 	statuses, err := prepareStatuses(test.DB, projects[0], 1)

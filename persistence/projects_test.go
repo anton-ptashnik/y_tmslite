@@ -2,7 +2,6 @@ package persistence
 
 import (
 	"database/sql"
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -26,25 +25,6 @@ func TestProjects(t *testing.T) {
 	t.Run("add", tests.addProject)
 	t.Run("del", tests.delProject(projects[0]))
 	t.Run("upd", tests.updProject(projects[1]))
-}
-
-func prepareProjects(db *sql.DB, n int) ([]Project, error) {
-	var p = Project{
-		Name:        "newp",
-		Description: "somethingverImportant",
-	}
-	q := `INSERT INTO projects (name, description) VALUES ($1,$2) RETURNING id`
-	var res []Project
-	for i := n; i > 0; i-- {
-		pc := p
-		pc.Name += fmt.Sprint(i)
-		err := db.QueryRow(q, pc.Name, pc.Description).Scan(&pc.ID)
-		if err != nil {
-			return nil, err
-		}
-		res = append(res, pc)
-	}
-	return res, nil
 }
 
 func (ps *projectsTest) addProject(t *testing.T) {

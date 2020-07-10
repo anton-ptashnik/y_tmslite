@@ -32,28 +32,6 @@ func TestStatuses(t *testing.T) {
 	t.Run("del", tests.delStatus(status))
 }
 
-func prepareStatuses(db *sql.DB, p Project, n int) ([]Status, error) {
-	var baseStatus = Status{
-		PID:   p.ID,
-		Name:  "default",
-		SeqNo: 0,
-	}
-	q := `INSERT INTO statuses (pid, name, seqNo) VALUES ($1,$2,$3) RETURNING id`
-	var statuses []Status
-	for n > 0 {
-		n--
-		status := baseStatus
-		status.Name = fmt.Sprint(status.Name, n)
-		status.SeqNo = n
-		err := db.QueryRow(q, status.PID, status.Name, status.SeqNo).Scan(&status.ID)
-		if err != nil {
-			return statuses, err
-		}
-		statuses = append(statuses, status)
-	}
-	return statuses, nil
-}
-
 func (st *statusesTests) getStatus(expected Status) func(t *testing.T) {
 	return func(t *testing.T) {
 		actual, err := GetTaskStatus(expected.ID)

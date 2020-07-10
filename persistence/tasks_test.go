@@ -2,7 +2,6 @@ package persistence
 
 import (
 	"database/sql"
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -104,43 +103,6 @@ func (test *taskTests) updTask(task Task) func(t *testing.T) {
 			t.Error("responded ok but updated entry not found. Old/new:", task, updTask)
 		}
 	}
-}
-func preparePriorities(db *sql.DB, n int) ([]Priority, error) {
-	q := `INSERT INTO priorities (name) VALUES ($1) RETURNING id`
-	var res []Priority
-	baseName := "No"
-	for n > 0 {
-		n--
-		p := Priority{
-			Name: fmt.Sprint(baseName, n),
-		}
-		err := db.QueryRow(q, p.Name).Scan(&p.ID)
-		if err != nil {
-			return res, err
-		}
-		res = append(res, p)
-	}
-	return res, nil
-}
-
-func prepareTasks(db *sql.DB, p Project, s Status, pri Priority, n int) ([]Task, error) {
-	baseTask := Task{
-		ProjectID:   p.ID,
-		StatusID:    s.ID,
-		PriorityID:  pri.ID,
-		Name:        "tesTask",
-		Description: "test purpose entry",
-	}
-	var tasks []Task
-	q := `INSERT INTO tasks (project_id,status_id,priority_id,name,description) VALUES ($1,$2,$3,$4,$5) RETURNING id`
-	for n > 0 {
-		n--
-		t := baseTask
-		t.Name = fmt.Sprint(t.Name, n)
-		db.QueryRow(q, t.ProjectID, t.StatusID, t.PriorityID, t.Name, t.Description).Scan(&t.ID)
-		tasks = append(tasks, t)
-	}
-	return tasks, nil
 }
 
 func checkTaskExists(expected Task) bool {
