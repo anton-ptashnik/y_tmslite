@@ -44,3 +44,20 @@ func (r *StatusesRepo) Upd(s Status) error {
 	query := `UPDATE statuses SET seqNo=$2,name=$3 WHERE id=$1`
 	return verifyModified(db.Exec(query, s.ID, s.SeqNo, s.Name))
 }
+
+func (r *StatusesRepo) UpdAll(all []Status) error {
+	tx, err := db.Begin()
+
+	if err != nil {
+		return err
+	}
+	query := `UPDATE statuses SET seqNo=$2,name=$3 WHERE id=$1`
+	for _, s := range all {
+		_, err := tx.Exec(query, s.ID, s.SeqNo, s.Name)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}

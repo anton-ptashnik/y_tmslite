@@ -15,29 +15,45 @@ type statusTests struct {
 
 func TestStatuses(t *testing.T) {
 	tests := statusTests{}
+	tests.s.SetTasksStatusOp = func(oldSid int64, newSid int64, pid int64) error {
+		return nil
+	}
 
+	t.Run("add", tests.add)
 	t.Run("del last status not allowed", tests.delLastStatus)
-	t.Run("del", tests.del)
+	t.Run("status can be deleted", tests.del)
 	t.Run("upd", tests.upd)
-	t.Run("task seqNo can be set", tests.setSeqNo)
-	t.Run("task seqNo setup fails on invalid value", tests.setInvalidSeqNo)
+	t.Run("status seqNo can be set", tests.setSeqNo)
+	t.Run("status seqNo setup fails on invalid value", tests.setInvalidSeqNo)
 }
 
 func (test *statusTests) del(t *testing.T) {
+	pid := int64(0)
 	r := statusesFakeRepo{
-		pid:   0,
+		pid: pid,
 		items: map[int64]persistence.Status{},
 	}
-	r.Add(persistence.Status{})
-	newItemID, _ := r.Add(persistence.Status{
-		PID: 0,
-	})
+	s1 := persistence.Status{
+		PID:   pid,
+		Name:  "s1",
+		SeqNo: 1,
+	}
+	s2 := persistence.Status{
+		PID:   pid,
+		Name:  "s2",
+		SeqNo: 2,
+	}
+	sid, _ := r.Add(s1)
+	s1.ID = sid
+	sid, _ = r.Add(s2)
+	s2.ID = sid
 	test.s.StatusesRepo = r
-	err := test.s.Del(newItemID, 0)
+
+	err := test.s.Del(s1.ID, pid)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Get(newItemID, r.pid); err == nil {
+	if _, err := r.Get(s1.ID, r.pid); err == nil {
 		t.Error("responded deleted but still present")
 	}
 }
@@ -95,7 +111,7 @@ func (test *statusTests) setInvalidSeqNo(t *testing.T) {
 
 	sid, _ := r.Add(s)
 	newSeqNo := 2
-	err := test.s.SetSeqNo(sid, s.PID, newSeqNo)
+	err := test.s.setSeqNo(sid, s.PID, newSeqNo)
 	if err == nil {
 		t.Fatal("invalid status seqNo accepted")
 	}
@@ -122,7 +138,7 @@ func (test *statusTests) setSeqNo(t *testing.T) {
 	copy(expected[:len(expected)-1], expected[1:])
 	expected[len(expected)-1] = iToBeMoved
 
-	err := test.s.SetSeqNo(iToBeMoved, r.pid, newSeqNo)
+	err := test.s.setSeqNo(iToBeMoved, r.pid, newSeqNo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,8 +146,41 @@ func (test *statusTests) setSeqNo(t *testing.T) {
 	actualStatuses, _ := r.List(r.pid)
 	for _, s := range actualStatuses {
 		if s.SeqNo >= len(statuses) || statuses[s.SeqNo] != s.ID {
-			t.Error("expected/found at seqNo:", statuses[s.SeqNo], s.ID)
+			t.Error("expected/found at seqNo:",s.SeqNo, statuses[s.SeqNo], s.ID)
 		}
+	}
+
+}
+
+func (test *statusTests) add(t *testing.T) {
+	status := persistence.Status{
+		PID:  0,
+		Name: "testitem",
+		SeqNo: 1,
+	}
+	newStatus := persistence.Status{
+		PID:  0,
+		Name: "testitem_new",
+		SeqNo: 1,
+	}
+	r := statusesFakeRepo{
+		pid:   0,
+		items: map[int64]persistence.Status{},
+	}
+	sid, _ := r.Add(status)
+	status.ID = sid
+	test.s.StatusesRepo = r
+
+	sid, err := test.s.Add(newStatus)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newStatus.ID = sid
+
+	status, _ = r.Get(status.ID, status.PID)
+	newStatus, _ = r.Get(newStatus.ID, newStatus.PID)
+	if status.SeqNo != 2 || newStatus.SeqNo != 1 {
+		t.Error("expected seqNo to be 1,2 but:", newStatus.SeqNo, status.SeqNo)
 	}
 
 }
@@ -139,6 +188,13 @@ func (test *statusTests) setSeqNo(t *testing.T) {
 type statusesFakeRepo struct {
 	pid   int64
 	items map[int64]persistence.Status
+}
+
+func (s statusesFakeRepo) UpdAll(statuses []persistence.Status) error {
+	for _, v := range statuses {
+		s.items[v.ID] = v
+	}
+	return nil
 }
 
 func (s statusesFakeRepo) List(pid int64) ([]persistence.Status, error) {

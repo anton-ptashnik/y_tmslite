@@ -15,13 +15,14 @@ type StatusesRepo interface {
 	Add(persistence.Status) (int64, error)
 	Upd(persistence.Status) error
 	Get(id int64, pid int64) (persistence.Status, error)
+	UpdAll([]persistence.Status) error
 }
 
-type SetNewStatusOp func(oldSid int64, newSid int64, pid int64) error
+type SetTasksStatusOp func(oldSid int64, newSid int64, pid int64) error
 
 type StatusesService struct {
 	StatusesRepo
-	SetNewStatusOp
+	SetTasksStatusOp
 }
 
 func (s *StatusesService) Del(sid int64, pid int64) error {
@@ -49,19 +50,18 @@ func (s *StatusesService) Del(sid int64, pid int64) error {
 			break
 		}
 	}
-	err = s.SetNewStatusOp(sid, targetStatusID, pid)
+	err = s.SetTasksStatusOp(sid, targetStatusID, pid)
 	if err != nil {
 		return err
 	}
-	err = s.SetSeqNo(sid, pid, len(statuses))
+	err = s.setSeqNo(sid, pid, len(statuses))
 	if err != nil {
 		return err
 	}
 	return s.StatusesRepo.Del(sid, pid)
 }
 
-func (s *StatusesService) SetSeqNo(sid int64, pid int64, newSeqNo int) error {
-	// todo refactor
+func (s *StatusesService) setSeqNo(sid int64, pid int64, newSeqNo int) error {
 	targetStatus, err := s.StatusesRepo.Get(sid, pid)
 	if err != nil {
 		return err
@@ -85,21 +85,27 @@ func (s *StatusesService) SetSeqNo(sid int64, pid int64, newSeqNo int) error {
 	if err != nil {
 		return err
 	}
-
-	for i := range toBeMoved {
-		toBeMoved[i].SeqNo += di
+	err = s.moveStatuses(toBeMoved, di)
+	if err != nil {
+		return err
 	}
 	targetStatus.SeqNo = newSeqNo
-	toBeMoved = append(toBeMoved, targetStatus)
+	return s.StatusesRepo.Upd(targetStatus)
+}
 
-	for _, se := range toBeMoved {
-		err := s.StatusesRepo.Upd(se)
-		if err != nil {
-			return err
+func (s *StatusesService) filterBySeqNo(all []persistence.Status, l int, r int) ([]persistence.Status, error) {
+	if r > len(all) {
+		return nil, errors.New("invalid seqNo")
+	}
+	var filtered []persistence.Status
+	for _, s := range all {
+		if s.SeqNo >= l && s.SeqNo <= r {
+			filtered = append(filtered, s)
 		}
 	}
-	return nil
+	return filtered, nil
 }
+
 
 func (s *StatusesService) listBySeqNo(pid int64, l int, r int) ([]persistence.Status, error) {
 	all, err := s.StatusesRepo.List(pid)
@@ -124,10 +130,31 @@ func (s *StatusesService) Upd(upd persistence.Status) error {
 		return err
 	}
 	if current.SeqNo != upd.SeqNo {
-		err := s.SetSeqNo(upd.ID, upd.PID, upd.SeqNo)
+		err := s.setSeqNo(upd.ID, upd.PID, upd.SeqNo)
 		if err != nil {
 			return err
 		}
 	}
 	return s.StatusesRepo.Upd(upd)
+}
+
+func (s *StatusesService) Add(status persistence.Status) (int64, error) {
+	all, err := s.StatusesRepo.List(status.PID)
+	toBeMoved, err := s.filterBySeqNo(all, status.SeqNo, len(all))
+	if err != nil {
+		return 0, err
+	}
+	err = s.moveStatuses(toBeMoved, 1)
+	if err != nil {
+		return 0,err
+	}
+	return s.StatusesRepo.Add(status)
+}
+
+func (s *StatusesService) moveStatuses(toBeMoved []persistence.Status, d int) ( error) {
+	for i := range toBeMoved {
+		toBeMoved[i].SeqNo += d
+	}
+
+	return s.StatusesRepo.UpdAll(toBeMoved)
 }

@@ -7,9 +7,9 @@ CREATE TABLE projects (
 CREATE TABLE statuses (
     id SERIAL PRIMARY KEY,
     pid INTEGER REFERENCES projects ON DELETE CASCADE,
-    seqNo INTEGER NOT NULL DEFAULT 0,
+    seqNo INTEGER NOT NULL,
     name VARCHAR(255) NOT NULL,
-    UNIQUE(pid, seqNo),
+--     UNIQUE(pid, seqNo),
     UNIQUE(pid, name)
 );
 
@@ -29,7 +29,7 @@ CREATE TABLE tasks (
 
 CREATE TABLE comments (
     id SERIAL PRIMARY KEY,
-    task_id INTEGER REFERENCES tasks NOT NULL,
+    task_id INTEGER REFERENCES tasks On DELETE CASCADE,
     text VARCHAR(5000) NOT NULL,
     modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

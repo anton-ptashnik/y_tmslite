@@ -12,7 +12,7 @@ func initialStatus(pid int64) persistence.Status {
 	return persistence.Status{
 		PID:   pid,
 		Name:  "default",
-		SeqNo: 0,
+		SeqNo: 1,
 	}
 }
 
