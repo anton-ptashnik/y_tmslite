@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -9,34 +11,79 @@ import (
 	"y_finalproject/persistence"
 )
 
-func TestAddTask(t *testing.T) {
-	var expectedID int64 = 2
-	addTaskOp := func(t persistence.Task) (int64, error) {
-		return expectedID, nil
+type tasksHandlerTest struct {
+	TasksHandler
+}
+type fakeTasksService struct {
+	tasks []persistence.Task
+}
+
+func TestTasks(t *testing.T) {
+	tests := tasksHandlerTest{}
+
+	t.Run("add", tests.addTask)
+	t.Run("del", tests.delTask)
+	t.Run("list", tests.listTasks)
+	t.Run("upd", tests.updTask)
+	t.Run("get", tests.getTask)
+}
+func (f *fakeTasksService) List(pid int64) ([]persistence.Task, error) {
+	return f.tasks, nil
+}
+
+func (f *fakeTasksService) Del(id int64, pid int64) error {
+	return nil
+}
+
+func (f *fakeTasksService) Add(task persistence.Task) (int64, error) {
+	id := len(f.tasks)
+	f.tasks = append(f.tasks, task)
+	return int64(id), nil
+}
+
+func (f *fakeTasksService) Upd(task persistence.Task) error {
+	if task.ID >= int64(len(f.tasks)) {
+		return errors.New("wrong ID")
 	}
-	handler := AddTask(addTaskOp)
+	f.tasks[task.ID] = task
+	return nil
+}
+
+func (f *fakeTasksService) Get(id int64, pid int64) (persistence.Task, error) {
+	if id >= int64(len(f.tasks)) {
+		return persistence.Task{}, errors.New("wrong ID")
+	}
+	return f.tasks[id], nil
+}
+
+func (test *tasksHandlerTest) addTask(t *testing.T) {
+	task := persistence.Task{
+		ProjectID:   0,
+		StatusID:    0,
+		PriorityID:  0,
+		Name:        "abc",
+		Description: "",
+	}
+	test.initTaskService([]persistence.Task{})
 	req := httptest.NewRequest("post", "/projects/1/tasks", nil)
 	w := httptest.NewRecorder()
-	handler(w, req)
+	test.TasksHandler.AddTask(w, req)
 
 	resp := w.Result()
 	var r struct{ ID int64 }
 	json.NewDecoder(resp.Body).Decode(&r)
-	if resp.StatusCode != http.StatusCreated || r.ID != expectedID {
-		t.Errorf("expected %v %v, but got %v %v", 201, expectedID, resp.StatusCode, r)
+	if resp.StatusCode != http.StatusCreated || r.ID != task.ID {
+		t.Errorf("expected %v %v, but got %v %v", 201, task.ID, resp.StatusCode, r.ID)
 	}
 }
 
-func TestListTasks(t *testing.T) {
-	expectedTasks := []persistence.Task{{ID: 1, ProjectID: 2, StatusID: 3, PriorityID: 1, Name: "test"}}
-	listTasksFakeOp := listTasksOp(func(_ int64) ([]persistence.Task, error) {
-		return expectedTasks, nil
-	})
+func (test *tasksHandlerTest) listTasks(t *testing.T) {
+	expectedTasks := []persistence.Task{{ProjectID: 2, StatusID: 3, PriorityID: 1, Name: "test"}}
 
-	handler := ListTasks(listTasksFakeOp)
+	expectedTasks = test.initTaskService(expectedTasks)
 	req := httptest.NewRequest("get", "/projects/1/tasks", nil)
 	w := httptest.NewRecorder()
-	handler(w, req)
+	test.TasksHandler.ListTasks(w, req)
 
 	resp := w.Result()
 	var actualTasks []persistence.Task
@@ -46,22 +93,18 @@ func TestListTasks(t *testing.T) {
 	}
 }
 
-func TestGetTask(t *testing.T) {
+func (test *tasksHandlerTest) getTask(t *testing.T) {
 	expectedTask := persistence.Task{
-		ID:         2,
 		ProjectID:  1,
 		StatusID:   1,
 		PriorityID: 0,
 		Name:       "test",
 	}
-	getTaskFakeOp := getTaskOp(func(id int64) (persistence.Task, error) {
-		//if id != expectedTask.ID {
-		//	return persistence.Task{}, errors.New("")
-		//}
-		return expectedTask, nil
-	})
+	expectedTask = test.initTaskService([]persistence.Task{
+		expectedTask,
+	})[0]
+	handler := test.TasksHandler.GetTask
 
-	handler := GetTask(getTaskFakeOp)
 	endpoint := "/projects/1/tasks/2"
 	req := httptest.NewRequest("get", endpoint, nil)
 	w := httptest.NewRecorder()
@@ -75,12 +118,15 @@ func TestGetTask(t *testing.T) {
 	}
 }
 
-func TestDelTask(t *testing.T) {
-	delFakeOp := delTaskOp(func(_ int64) error {
-		return nil
-	})
-	handler := DelTask(delFakeOp)
-	endpoint := "/projects/1/tasks/2"
+func (test *tasksHandlerTest) delTask(t *testing.T) {
+	task := test.initTaskService([]persistence.Task{
+		{
+			Name: "testtask",
+		},
+	})[0]
+
+	handler := test.TasksHandler.DelTask
+	endpoint := fmt.Sprint("/projects/0/tasks/",task.ID)
 	req := httptest.NewRequest("delete", endpoint, nil)
 	w := httptest.NewRecorder()
 	handler(w, req)
@@ -91,12 +137,8 @@ func TestDelTask(t *testing.T) {
 	}
 }
 
-func TestUpdTask(t *testing.T) {
-	updFakeOp := updTaskOp(func(_ persistence.Task) error {
-		return nil
-	})
-
-	handler := UpdTask(updFakeOp)
+func (test *tasksHandlerTest) updTask(t *testing.T) {
+	handler := test.TasksHandler.UpdTask
 	endpoint := "/projects/1/tasks/2"
 	req := httptest.NewRequest("put", endpoint, nil)
 	w := httptest.NewRecorder()
@@ -107,4 +149,13 @@ func TestUpdTask(t *testing.T) {
 		t.Error("expected/actual status mismatch:", 200, resp.StatusCode)
 	}
 
+}
+
+func (test *tasksHandlerTest) initTaskService(tasks []persistence.Task) []persistence.Task {
+	taskService := fakeTasksService{}
+	for i := range tasks {
+		tasks[i].ID, _ = taskService.Add(tasks[i])
+	}
+	test.TasksService = &taskService
+	return tasks
 }
