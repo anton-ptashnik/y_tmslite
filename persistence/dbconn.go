@@ -3,13 +3,12 @@ package persistence
 import (
 	"database/sql"
 	_ "github.com/lib/pq"
-	"os"
 )
 
 var db *sql.DB
 
-func InitDb() (*sql.DB, error) {
-	dbc, err := sql.Open("postgres", os.Getenv("DB_CONN_URL"))
+func InitDb(url string) (*sql.DB, error) {
+	dbc, err := sql.Open("postgres", url)
 	db = dbc
 	return dbc, err
 }

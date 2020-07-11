@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	db, err := persistence.InitDb()
+	db, err := persistence.InitDb(os.Getenv("DB_CONN_URL"))
 	if err != nil {
 		panic(err)
 	}

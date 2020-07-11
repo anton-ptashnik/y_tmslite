@@ -11,9 +11,6 @@ type projectsTest struct {
 }
 
 func TestProjects(t *testing.T) {
-	_, err := InitDb()
-	panicOnErr(err)
-	defer db.Close()
 	tests := projectsTest{db}
 	projects, err := prepareProjects(db, 2)
 	if err != nil {

@@ -1,20 +1,16 @@
 package persistence
 
 import (
-	"database/sql"
 	"fmt"
 	"reflect"
 	"testing"
 )
 
 type statusesTests struct {
-	*sql.DB
+	StatusesRepo
 }
 
 func TestStatuses(t *testing.T) {
-	_, err := InitDb()
-	panicOnErr(err)
-	defer db.Close()
 	projects, err := prepareProjects(db, 1)
 	if err != nil {
 		t.Fatal(fmt.Sprint("projects prep failed:", err))
@@ -26,15 +22,15 @@ func TestStatuses(t *testing.T) {
 	}
 	status := statuses[0]
 
-	tests := statusesTests{db}
+	tests := statusesTests{}
 	t.Run("get", tests.getStatus(status))
 	t.Run("add", tests.addStatus(project))
 	t.Run("del", tests.delStatus(status))
 }
 
-func (st *statusesTests) getStatus(expected Status) func(t *testing.T) {
+func (test *statusesTests) getStatus(expected Status) func(t *testing.T) {
 	return func(t *testing.T) {
-		actual, err := GetTaskStatus(expected.ID)
+		actual, err := test.StatusesRepo.Get(expected.ID, expected.PID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -44,14 +40,14 @@ func (st *statusesTests) getStatus(expected Status) func(t *testing.T) {
 	}
 }
 
-func (st *statusesTests) addStatus(p Project) func(t *testing.T) {
+func (test *statusesTests) addStatus(p Project) func(t *testing.T) {
 	return func(t *testing.T) {
 		s := Status{
 			PID:   p.ID,
 			Name:  "newstatus",
 			SeqNo: 2,
 		}
-		id, err := AddTaskStatus(s)
+		id, err := test.StatusesRepo.Add(s)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -62,9 +58,9 @@ func (st *statusesTests) addStatus(p Project) func(t *testing.T) {
 	}
 }
 
-func (st *statusesTests) delStatus(s Status) func(t *testing.T) {
+func (test *statusesTests) delStatus(s Status) func(t *testing.T) {
 	return func(t *testing.T) {
-		err := DelTaskStatus(s.ID)
+		err := test.Del(s.ID, s.PID)
 		if err != nil {
 			t.Fatal(err)
 		}

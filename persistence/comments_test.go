@@ -7,9 +7,6 @@ import (
 )
 
 func TestComments(t *testing.T) {
-	_, err := InitDb()
-	panicOnErr(err)
-	defer db.Close()
 	tests := commentTests{db}
 
 	data := tests.prepareCommentTestsInput()
