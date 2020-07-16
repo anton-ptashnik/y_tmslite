@@ -2,9 +2,7 @@ package middleware
 
 import (
 	"encoding/json"
-	"github.com/go-chi/chi"
 	"net/http"
-	"strconv"
 	"y_finalproject/persistence"
 )
 
@@ -35,7 +33,7 @@ func AddProject(insertOp insertStatusOp) http.HandlerFunc {
 	}
 }
 func DelProject(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	id := extractIdParam(r, "pid")
 	if err := persistence.DelProject(int64(id)); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(err.Error()))
@@ -52,7 +50,7 @@ func ListProjects(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetProject(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	id := extractIdParam(r, "pid")
 	p, err := persistence.GetProject(int64(id))
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -64,7 +62,7 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 func UpdProject(w http.ResponseWriter, r *http.Request) {
 	var p persistence.Project
 	json.NewDecoder(r.Body).Decode(&p)
-	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	id := extractIdParam(r, "pid")
 	p.ID = int64(id)
 	if persistence.UpdProject(p) != nil {
 		w.WriteHeader(http.StatusNotFound)

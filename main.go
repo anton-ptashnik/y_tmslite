@@ -27,9 +27,9 @@ func main() {
 	r.Route("/projects", func(r chi.Router) {
 		r.Post("/", middleware.AddProject(statusesHandler.Add))
 		r.Get("/", middleware.ListProjects)
-		r.Get("/{id}", middleware.GetProject)
-		r.Delete("/{id}", middleware.DelProject)
-		r.Put("/{id}", middleware.UpdProject)
+		r.Get("/{pid}", middleware.GetProject)
+		r.Delete("/{pid}", middleware.DelProject)
+		r.Put("/{pid}", middleware.UpdProject)
 	})
 	r.Route("/projects/{pid}/statuses", func(r chi.Router) {
 		r.Post("/", statusesHandler.AddStatus)

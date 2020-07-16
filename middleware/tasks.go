@@ -2,9 +2,7 @@ package middleware
 
 import (
 	"encoding/json"
-	"github.com/go-chi/chi"
 	"net/http"
-	"strconv"
 	"y_finalproject/persistence"
 	"y_finalproject/service"
 )
@@ -20,7 +18,7 @@ type TasksHandler struct {
 func (h *TasksHandler) AddTask(w http.ResponseWriter, r *http.Request) {
 	var t persistence.Task
 	json.NewDecoder(r.Body).Decode(&t)
-	pid, _ := strconv.Atoi(chi.URLParam(r, "pid"))
+	pid := extractIdParam(r, "pid")
 	t.ProjectID = int64(pid)
 	id, err := h.TasksService.Add(t)
 	if err != nil {
@@ -31,8 +29,8 @@ func (h *TasksHandler) AddTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TasksHandler) DelTask(w http.ResponseWriter, r *http.Request) {
-	pid, _ := strconv.Atoi(chi.URLParam(r, "pid"))
-	tid, _ := strconv.Atoi(chi.URLParam(r, "tid"))
+	pid := extractIdParam(r, "pid")
+	tid := extractIdParam(r, "tid")
 	err := h.TasksService.Del(int64(tid), int64(pid))
 	if err != nil {
 		reqFailed(w, err)
@@ -40,7 +38,7 @@ func (h *TasksHandler) DelTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TasksHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
-	pid, _ := strconv.Atoi(chi.URLParam(r, "pid"))
+	pid := extractIdParam(r, "pid")
 	tasks, err := h.TasksService.List(int64(pid))
 	if err != nil {
 		reqFailed(w, err)
@@ -50,8 +48,8 @@ func (h *TasksHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TasksHandler) GetTask(w http.ResponseWriter, r *http.Request) {
-	pid, _ := strconv.Atoi(chi.URLParam(r, "pid"))
-	tid, _ := strconv.Atoi(chi.URLParam(r, "tid"))
+	pid := extractIdParam(r, "pid")
+	tid := extractIdParam(r, "tid")
 	task, err := h.TasksService.Get(int64(tid), int64(pid))
 	if err != nil {
 		reqFailed(w, err)
@@ -62,7 +60,7 @@ func (h *TasksHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 
 func (h *TasksHandler) UpdTask(w http.ResponseWriter, r *http.Request) {
 	//pid, _ := strconv.Atoi(chi.URLParam(r, "pid"))
-	tid, _ := strconv.Atoi(chi.URLParam(r, "tid"))
+	tid := extractIdParam(r, "tid")
 	var t persistence.Task
 	json.NewDecoder(r.Body).Decode(&t)
 	t.ID = int64(tid)
