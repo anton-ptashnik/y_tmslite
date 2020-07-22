@@ -1,31 +1,32 @@
 package persistence
 
-type StatusesRepo struct{}
+type StatusesRepo struct {
+	opExecutor
+}
 
 func (r *StatusesRepo) Add(s Status) (int64, error) {
-
 	q := "INSERT INTO statuses (pid, seqNo, name) VALUES ($1,$2,$3) RETURNING id"
 	var id int64
-	err := db.QueryRow(q, s.PID, s.SeqNo, s.Name).Scan(&id)
+	err := r.QueryRow(q, s.PID, s.SeqNo, s.Name).Scan(&id)
 	return id, err
 }
 func (r *StatusesRepo) Del(id int64, pid int64) error {
 	query := `DELETE FROM statuses WHERE id=$1`
-	return verifyModified(db.Exec(query, id))
+	return verifyModified(r.Exec(query, id))
 }
 
 func (r *StatusesRepo) Get(id int64, pid int64) (Status, error) {
 
 	q := "SELECT * FROM statuses WHERE id=$1"
 	var d Status
-	err := db.QueryRow(q, id).Scan(&d.ID, &d.PID, &d.SeqNo, &d.Name)
+	err := r.QueryRow(q, id).Scan(&d.ID, &d.PID, &d.SeqNo, &d.Name)
 	return d, err
 }
 
 func (r *StatusesRepo) List(projectID int64) ([]Status, error) {
 
 	q := "SELECT * FROM statuses WHERE pid=$1"
-	rows, err := db.Query(q, projectID)
+	rows, err := r.Query(q, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -42,22 +43,15 @@ func (r *StatusesRepo) List(projectID int64) ([]Status, error) {
 func (r *StatusesRepo) Upd(s Status) error {
 
 	query := `UPDATE statuses SET seqNo=$2,name=$3 WHERE id=$1`
-	return verifyModified(db.Exec(query, s.ID, s.SeqNo, s.Name))
+	return verifyModified(r.Exec(query, s.ID, s.SeqNo, s.Name))
 }
 
-func (r *StatusesRepo) UpdAll(all []Status) error {
-	tx, err := db.Begin()
-
-	if err != nil {
-		return err
+func NewStatusesRepo(tx *Tx) *StatusesRepo {
+	var ctx opExecutor
+	if tx == nil {
+		ctx = db
+	} else {
+		ctx = tx.tx
 	}
-	query := `UPDATE statuses SET seqNo=$2,name=$3 WHERE id=$1`
-	for _, s := range all {
-		_, err := tx.Exec(query, s.ID, s.SeqNo, s.Name)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-	return tx.Commit()
+	return &StatusesRepo{ctx}
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"y_finalproject/persistence"
 )
 
@@ -15,14 +16,15 @@ type StatusesRepo interface {
 	Add(persistence.Status) (int64, error)
 	Upd(persistence.Status) error
 	Get(id int64, pid int64) (persistence.Status, error)
-	UpdAll([]persistence.Status) error
 }
 
 type SetTasksStatusOp func(oldSid int64, newSid int64, pid int64) error
+type StatusesRepoTx func(*persistence.Tx) StatusesRepo
 
 type StatusesService struct {
 	StatusesRepo
 	SetTasksStatusOp
+	StatusesRepoTx
 }
 
 func (s *StatusesService) Del(sid int64, pid int64) error {
@@ -151,10 +153,22 @@ func (s *StatusesService) Add(status persistence.Status) (int64, error) {
 	return s.StatusesRepo.Add(status)
 }
 
-func (s *StatusesService) moveStatuses(toBeMoved []persistence.Status, d int) ( error) {
+func (s *StatusesService) moveStatuses(toBeMoved []persistence.Status, d int) error {
 	for i := range toBeMoved {
 		toBeMoved[i].SeqNo += d
 	}
 
-	return s.StatusesRepo.UpdAll(toBeMoved)
+	tx, err := persistence.NewTx()
+	if err != nil {
+		return fmt.Errorf("err in Tx init: %s", err)
+	}
+	txRepo := s.StatusesRepoTx(tx)
+	for _, status := range toBeMoved {
+		err := txRepo.Upd(status)
+		if err != nil {
+			errR := tx.Rollback()
+			return errors.New(fmt.Sprint("failed to change seqNo. cause err/rollback err:", err, errR))
+		}
+	}
+	return persistence.TryCommit(tx)
 }
