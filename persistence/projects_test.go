@@ -7,11 +7,11 @@ import (
 )
 
 type projectsTest struct {
-	*sql.DB
+	ProjectsRepo
 }
 
 func TestProjects(t *testing.T) {
-	tests := projectsTest{db}
+	tests := projectsTest{}
 	projects, err := prepareProjects(db, 2)
 	if err != nil {
 		t.Fatal("preparation failed", err)
@@ -29,7 +29,7 @@ func (ps *projectsTest) addProject(t *testing.T) {
 		Name:        "newp",
 		Description: "abc",
 	}
-	_, err := AddProject(p)
+	_, err := ps.Add(p)
 	if err != nil {
 		t.Error(err)
 	}
@@ -38,7 +38,7 @@ func (ps *projectsTest) addProject(t *testing.T) {
 func (ps *projectsTest) getProject(projects []Project) func(t *testing.T) {
 	return func(t *testing.T) {
 		for _, expectedProj := range projects {
-			actualProj, err := GetProject(expectedProj.ID)
+			actualProj, err := ps.Get(expectedProj.ID)
 			if err != nil {
 				t.Error(err)
 			}
@@ -51,11 +51,11 @@ func (ps *projectsTest) getProject(projects []Project) func(t *testing.T) {
 
 func (ps *projectsTest) delProject(p Project) func(*testing.T) {
 	return func(t *testing.T) {
-		err := DelProject(p.ID)
+		err := ps.Del(p.ID)
 		if err != nil {
 			t.Error(err)
 		}
-		if checkProjectExists(ps.DB, p) {
+		if checkProjectExists(db, p) {
 			t.Error("failed to remove:", p)
 		}
 	}
@@ -63,12 +63,12 @@ func (ps *projectsTest) delProject(p Project) func(*testing.T) {
 
 func (ps *projectsTest) listProjects() func(*testing.T) {
 	return func(t *testing.T) {
-		list, err := ListProjects()
+		list, err := ps.List()
 		if err != nil {
 			t.Fatal(err)
 		}
 		for _, v := range list {
-			if !checkProjectExists(ps.DB, v) {
+			if !checkProjectExists(db, v) {
 				t.Error("expected entry is missing:", v)
 			}
 		}
@@ -86,11 +86,11 @@ func (ps *projectsTest) updProject(p Project) func(t *testing.T) {
 	upd := p
 	upd.Name += "_updated"
 	return func(t *testing.T) {
-		err := UpdProject(upd)
+		err := ps.Upd(upd)
 		if err != nil {
 			t.Error("update failed:", p)
 		}
-		if !checkProjectExists(ps.DB, upd) {
+		if !checkProjectExists(db, upd) {
 			t.Error("updated entry does not equal to expected:", upd)
 		}
 	}
