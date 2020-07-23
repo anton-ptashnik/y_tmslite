@@ -1,33 +1,33 @@
 package persistence
 
 type Comment struct {
-	taskID uint
-	text   string
-	date   string
+	ID     int64
+	TaskID int64
+	Text   string
+	Date   string
 }
 
-type TaskStatus struct {
-	projID uint
-	name   string
-	seqNo  uint
+type Status struct {
+	ID    int64
+	PID   int64
+	Name  string
+	SeqNo int
 }
 
 type Priority struct {
-	name string
+	ID   int64
+	Name string
 }
 
 type Task struct {
 	ID                int64
-	projID            uint
-	name, description string
-	status            TaskStatus
-	priority          Priority
-	comments          []Comment
+	ProjectID         int64
+	StatusID          int64
+	PriorityID        int64
+	Name, Description string
 }
 
 type Project struct {
 	ID                int64
-	name, description string
-	tasks             []Task
-	taskStatuses      []TaskStatus
+	Name, Description string
 }
