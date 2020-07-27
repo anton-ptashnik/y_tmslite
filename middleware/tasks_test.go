@@ -1,12 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"y_finalproject/persistence"
 )
@@ -57,23 +59,18 @@ func (f *fakeTasksService) Get(id int64, pid int64) (persistence.Task, error) {
 }
 
 func (test *tasksHandlerTest) addTask(t *testing.T) {
-	task := persistence.Task{
-		ProjectID:   0,
-		StatusID:    0,
-		PriorityID:  0,
-		Name:        "abc",
-		Description: "",
-	}
+	body := `{	Name: 'abc', ProjectID: 0, StatusID: 0, 'PriorityID': 0 }`
+
 	test.initTaskService([]persistence.Task{})
-	req := httptest.NewRequest("post", "/projects/1/tasks", nil)
+	req := httptest.NewRequest("post", "/projects/1/tasks", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	test.TasksHandler.AddTask(w, req)
 
 	resp := w.Result()
 	var r struct{ ID int64 }
 	json.NewDecoder(resp.Body).Decode(&r)
-	if resp.StatusCode != http.StatusCreated || r.ID != task.ID {
-		t.Errorf("expected %v %v, but got %v %v", 201, task.ID, resp.StatusCode, r.ID)
+	if resp.StatusCode != http.StatusCreated {
+		t.Errorf("expected %v %v, but got %v", 201, resp.StatusCode, r.ID)
 	}
 }
 
@@ -138,17 +135,33 @@ func (test *tasksHandlerTest) delTask(t *testing.T) {
 }
 
 func (test *tasksHandlerTest) updTask(t *testing.T) {
+	task := persistence.Task{
+		ProjectID:  1,
+		StatusID:   1,
+		PriorityID: 0,
+		Name:       "test",
+	}
+	task = test.initTaskService([]persistence.Task{
+		task,
+	})[0]
+	body := `{ "Name": "newName" }`
+	expectedTask := persistence.Task{
+		Name: "newName",
+	}
 	handler := test.TasksHandler.UpdTask
-	endpoint := "/projects/1/tasks/2"
-	req := httptest.NewRequest("put", endpoint, nil)
+
+	//endpoint := "/projects/1/tasks/2"
+	ctx := context.WithValue(context.Background(), `pid`, task.ProjectID)
+	ctx = context.WithValue(ctx, `tid`, task.ID)
+	req, _ := http.NewRequestWithContext(ctx, "put", `/`, strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler(w, req)
 
 	resp := w.Result()
-	if resp.StatusCode != http.StatusOK {
+	updatedTask, _ := test.TasksService.Get(expectedTask.ID, expectedTask.ProjectID)
+	if resp.StatusCode != http.StatusOK || !reflect.DeepEqual(expectedTask, updatedTask) {
 		t.Error("expected/actual status mismatch:", 200, resp.StatusCode)
 	}
-
 }
 
 func (test *tasksHandlerTest) initTaskService(tasks []persistence.Task) []persistence.Task {
