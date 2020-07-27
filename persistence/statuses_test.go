@@ -22,7 +22,8 @@ func TestStatuses(t *testing.T) {
 	}
 	status := statuses[0]
 
-	tests := statusesTests{}
+	repo := NewStatusesRepo(nil)
+	tests := statusesTests{*repo}
 	t.Run("get", tests.getStatus(status))
 	t.Run("add", tests.addStatus(project))
 	t.Run("del", tests.delStatus(status))
