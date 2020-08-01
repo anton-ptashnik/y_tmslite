@@ -10,12 +10,12 @@ import (
 var errProjectNotFound = errors.New("project not found")
 
 type statusTests struct {
-	s StatusesService
+	StatusesService
 }
 
 func TestStatuses(t *testing.T) {
 	tests := statusTests{}
-	tests.s.SetTasksStatusOp = func(oldSid int64, newSid int64, pid int64) error {
+	tests.SetTasksStatusOp = func(oldSid int64, newSid int64, pid int64) error {
 		return nil
 	}
 
@@ -47,9 +47,9 @@ func (test *statusTests) del(t *testing.T) {
 	s1.ID = sid
 	sid, _ = r.Add(s2)
 	s2.ID = sid
-	test.s.StatusesRepo = r
+	test.StatusesRepo = r
 
-	err := test.s.Del(s1.ID, pid)
+	err := test.Del(s1.ID, pid)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,8 +65,8 @@ func (test *statusTests) delLastStatus(t *testing.T) {
 	newItemID, _ := r.Add(persistence.Status{
 		PID: 0,
 	})
-	test.s.StatusesRepo = r
-	err := test.s.Del(newItemID, 0)
+	test.StatusesRepo = r
+	err := test.Del(newItemID, 0)
 	if err == nil {
 		t.Fatal("last status deleted")
 	}
@@ -84,12 +84,12 @@ func (test *statusTests) upd(t *testing.T) {
 		pid:   status.ID,
 		items: map[int64]persistence.Status{},
 	}
-	test.s.StatusesRepo = r
+	test.StatusesRepo = r
 
 	newItemID, _ := r.Add(status)
 	status.ID = newItemID
 	status.Name += "_upd"
-	err := test.s.Upd(status)
+	err := test.Upd(status)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,11 +107,11 @@ func (test *statusTests) setInvalidSeqNo(t *testing.T) {
 		pid:   s.PID,
 		items: map[int64]persistence.Status{},
 	}
-	test.s.StatusesRepo = r
+	test.StatusesRepo = r
 
 	sid, _ := r.Add(s)
 	newSeqNo := 2
-	err := test.s.setSeqNo(sid, s.PID, newSeqNo)
+	err := test.StatusesService.setSeqNo(sid, s.PID, newSeqNo)
 	if err == nil {
 		t.Fatal("invalid status seqNo accepted")
 	}
@@ -121,7 +121,7 @@ func (test *statusTests) setSeqNo(t *testing.T) {
 		pid:   0,
 		items: map[int64]persistence.Status{},
 	}
-	test.s.StatusesRepo = r
+	test.StatusesRepo = r
 
 	var statuses []int64
 	for n := 0; n < 5; n++ {
@@ -138,7 +138,7 @@ func (test *statusTests) setSeqNo(t *testing.T) {
 	copy(expected[:len(expected)-1], expected[1:])
 	expected[len(expected)-1] = iToBeMoved
 
-	err := test.s.setSeqNo(iToBeMoved, r.pid, newSeqNo)
+	err := test.StatusesService.setSeqNo(iToBeMoved, r.pid, newSeqNo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,47 +154,37 @@ func (test *statusTests) setSeqNo(t *testing.T) {
 
 func (test *statusTests) add(t *testing.T) {
 	status := persistence.Status{
-		PID:  0,
+		ID: 2,
 		Name: "testitem",
-		SeqNo: 1,
 	}
-	newStatus := persistence.Status{
-		PID:  0,
-		Name: "testitem_new",
-		SeqNo: 1,
+	var statuses []persistence.Status
+	addStatusOp := func(_status persistence.Status) (int64,error) {
+		statuses = append(statuses, _status)
+		return _status.ID, nil
 	}
 	r := statusesFakeRepo{
-		pid:   0,
-		items: map[int64]persistence.Status{},
+		addOp: addStatusOp,
 	}
 	sid, _ := r.Add(status)
-	status.ID = sid
-	test.s.StatusesRepo = r
+	test.StatusesRepo = r
 
-	sid, err := test.s.Add(newStatus)
+	sid, err := test.Add(status)
 	if err != nil {
 		t.Fatal(err)
 	}
-	newStatus.ID = sid
-
-	status, _ = r.Get(status.ID, status.PID)
-	newStatus, _ = r.Get(newStatus.ID, newStatus.PID)
-	if status.SeqNo != 2 || newStatus.SeqNo != 1 {
-		t.Error("expected seqNo to be 1,2 but:", newStatus.SeqNo, status.SeqNo)
+	if sid != status.ID {
+		t.Error("wrong entry ID, expected/actual:", status.ID, sid)
 	}
 
+	if len(statuses) == 0 || statuses[0] != status {
+		t.Error("indicated ok but no entry in a repo")
+	}
 }
 
 type statusesFakeRepo struct {
 	pid   int64
 	items map[int64]persistence.Status
-}
-
-func (s statusesFakeRepo) UpdAll(statuses []persistence.Status) error {
-	for _, v := range statuses {
-		s.items[v.ID] = v
-	}
-	return nil
+	addOp func(status persistence.Status) (int64, error)
 }
 
 func (s statusesFakeRepo) List(pid int64) ([]persistence.Status, error) {
@@ -217,13 +207,7 @@ func (s statusesFakeRepo) Del(sid int64, pid int64) error {
 }
 
 func (s statusesFakeRepo) Add(status persistence.Status) (int64, error) {
-	if status.PID != s.pid {
-		return 0, errProjectNotFound
-	}
-	id := int64(len(s.items) + 1)
-	status.ID = id
-	s.items[id] = status
-	return id, nil
+	return s.addOp(status)
 }
 
 func (s statusesFakeRepo) Upd(status persistence.Status) error {

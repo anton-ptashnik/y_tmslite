@@ -6,10 +6,6 @@ import (
 	"y_finalproject/persistence"
 )
 
-var (
-	errLastStatus = errors.New("last status cannot be deleted")
-)
-
 type StatusesRepo interface {
 	List(pid int64) ([]persistence.Status, error)
 	Del(id int64, pid int64) error
@@ -19,12 +15,14 @@ type StatusesRepo interface {
 }
 
 type SetTasksStatusOp func(oldSid int64, newSid int64, pid int64) error
-type StatusesRepoTx func(*persistence.Tx) StatusesRepo
+type StatusesRepoTx func(tx persistence.Tx) StatusesRepo
+type TxInitiator func() (persistence.Tx, error)
 
 type StatusesService struct {
 	StatusesRepo
 	SetTasksStatusOp
 	StatusesRepoTx
+	TxInitiator
 }
 
 func (s *StatusesService) Del(sid int64, pid int64) error {
@@ -33,7 +31,7 @@ func (s *StatusesService) Del(sid int64, pid int64) error {
 		return err
 	}
 	if len(statuses) == 1 && statuses[0].ID == sid {
-		return errLastStatus
+		return errLastStatusDelAttempt
 	}
 	statusToBeDel, err := s.StatusesRepo.Get(sid, pid)
 	if err != nil {
@@ -158,7 +156,7 @@ func (s *StatusesService) moveStatuses(toBeMoved []persistence.Status, d int) er
 		toBeMoved[i].SeqNo += d
 	}
 
-	tx, err := persistence.NewTx()
+	tx, err := s.TxInitiator()
 	if err != nil {
 		return fmt.Errorf("err in Tx init: %s", err)
 	}

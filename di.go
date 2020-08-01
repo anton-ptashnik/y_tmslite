@@ -15,9 +15,10 @@ func NewInj() inj {
 	s := service.TasksService{&r}
 	return inj{s}
 }
+
 func (i *inj) statusesHandler() middleware.StatusesHandler {
-	r := NewStatusesRepo(nil)
-	s := service.StatusesService{r, i.ts.SetTasksStatus,NewStatusesRepo}
+	r := newStatusesRepo(nil)
+	s := service.StatusesService{r, i.ts.SetTasksStatus, newStatusesRepo, newTx}
 	return middleware.StatusesHandler{s}
 }
 
@@ -25,7 +26,12 @@ func (i *inj) tasksHandler() middleware.TasksHandler {
 	return middleware.TasksHandler{i.ts}
 }
 
-func NewStatusesRepo(tx *persistence.Tx) service.StatusesRepo {
+func newStatusesRepo(tx persistence.Tx) service.StatusesRepo {
 	r := persistence.NewStatusesRepo(tx)
 	return r
+}
+
+func newTx() (persistence.Tx,error) {
+	tx, err := persistence.NewTx()
+	return tx, err
 }

@@ -28,9 +28,9 @@ func panicOnErr(err error) {
 	}
 }
 
-func NewTx() (*Tx, error) {
+func NewTx() (*tx, error) {
 	t, err := db.Begin()
-	res := Tx{t}
+	res := tx{t}
 	return &res, err
 }
 
@@ -40,19 +40,25 @@ type opExecutor interface {
 	Exec(q string, args ...interface{}) (sql.Result, error)
 }
 
-type Tx struct {
-	tx *sql.Tx
+type Tx interface {
+	opExecutor
+	Commit() error
+	Rollback() error
 }
 
-func (f *Tx) Commit() error {
-	return f.tx.Commit()
+type tx struct {
+	*sql.Tx
 }
 
-func (f *Tx) Rollback() error {
-	return f.tx.Rollback()
+func (f *tx) Commit() error {
+	return f.Commit()
 }
 
-func TryCommit(tx *Tx) error {
+func (f *tx) Rollback() error {
+	return f.Rollback()
+}
+
+func TryCommit(tx Tx) error {
 	errC := tx.Commit()
 	if errC != nil {
 		errR := tx.Rollback()

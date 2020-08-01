@@ -46,12 +46,12 @@ func (r *StatusesRepo) Upd(s Status) error {
 	return verifyModified(r.Exec(query, s.ID, s.SeqNo, s.Name))
 }
 
-func NewStatusesRepo(tx *Tx) *StatusesRepo {
+func NewStatusesRepo(tx Tx) *StatusesRepo {
 	var ctx opExecutor
 	if tx == nil {
 		ctx = db
 	} else {
-		ctx = tx.tx
+		ctx = tx
 	}
 	return &StatusesRepo{ctx}
 }

@@ -19,26 +19,34 @@ type TasksService struct {
 }
 
 func (s *TasksService) SetTasksStatus(oldSid int64, newSid int64, pid int64) error {
-	all, err := s.List(pid)
+	toBeMoved, err := s.findBySid(oldSid, pid)
 	if err != nil {
 		return err
 	}
-	var toBeMoved []persistence.Task
-	for _, v := range all {
-		if v.StatusID == oldSid {
-			toBeMoved = append(toBeMoved, v)
-		}
-	}
-	var opErr []int64
+	var failedUpdIDs []int64
 	for _, v := range toBeMoved {
 		v.StatusID = newSid
 		err := s.Upd(v)
 		if err != nil {
-			opErr = append(opErr, v.ID)
+			failedUpdIDs = append(failedUpdIDs, v.ID)
 		}
 	}
-	if len(opErr) > 0 {
-		return errors.New(fmt.Sprint("failed to set status for tasks", opErr))
+	if len(failedUpdIDs) > 0 {
+		return errors.New(fmt.Sprint("failed to set status for tasks", failedUpdIDs))
 	}
 	return nil
+}
+
+func (s *TasksService) findBySid(sid, pid int64) ([]persistence.Task, error) {
+	all, err := s.List(pid)
+	if err != nil {
+		return nil, err
+	}
+	var tasks []persistence.Task
+	for _, v := range all {
+		if v.StatusID == sid {
+			tasks = append(tasks, v)
+		}
+	}
+	return tasks, nil
 }
