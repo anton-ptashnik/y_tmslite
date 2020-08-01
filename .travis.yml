@@ -1,0 +1,6 @@
+language: go
+
+script:
+  - go test -v ./middleware
+  - go test -v ./service
+  - go test -v ./persistence
