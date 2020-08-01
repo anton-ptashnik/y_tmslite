@@ -47,11 +47,5 @@ func (r *StatusesRepo) Upd(s Status) error {
 }
 
 func NewStatusesRepo(tx Tx) *StatusesRepo {
-	var ctx opExecutor
-	if tx == nil {
-		ctx = db
-	} else {
-		ctx = tx
-	}
-	return &StatusesRepo{ctx}
+	return &StatusesRepo{initCtx(tx)}
 }

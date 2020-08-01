@@ -68,3 +68,13 @@ func TryCommit(tx Tx) error {
 	}
 	return nil
 }
+
+func initCtx(tx Tx) opExecutor {
+	var ctx opExecutor
+	if tx == nil {
+		ctx = db
+	} else {
+		ctx = tx
+	}
+	return ctx
+}

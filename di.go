@@ -12,7 +12,7 @@ type inj struct {
 
 func NewInj() inj {
 	r := persistence.TasksRepo{}
-	s := service.TasksService{&r}
+	s := service.TasksService{&r, newTasksRepo, newTx}
 	return inj{s}
 }
 
@@ -27,8 +27,11 @@ func (i *inj) tasksHandler() middleware.TasksHandler {
 }
 
 func newStatusesRepo(tx persistence.Tx) service.StatusesRepo {
-	r := persistence.NewStatusesRepo(tx)
-	return r
+	return persistence.NewStatusesRepo(tx)
+}
+
+func newTasksRepo(tx persistence.Tx) service.TasksRepo {
+	return persistence.NewTasksRepo(tx)
 }
 
 func newTx() (persistence.Tx,error) {

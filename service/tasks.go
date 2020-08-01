@@ -14,8 +14,12 @@ type TasksRepo interface {
 	Get(id int64, pid int64) (persistence.Task, error)
 }
 
+type TasksRepoTx func(tx persistence.Tx) TasksRepo
+
 type TasksService struct {
 	TasksRepo
+	TasksRepoTx
+	TxInitiator
 }
 
 func (s *TasksService) SetTasksStatus(oldSid int64, newSid int64, pid int64) error {
@@ -24,17 +28,20 @@ func (s *TasksService) SetTasksStatus(oldSid int64, newSid int64, pid int64) err
 		return err
 	}
 	var failedUpdIDs []int64
+	tx, err := s.TxInitiator()
+	txTasks := s.TasksRepoTx(tx)
 	for _, v := range toBeMoved {
 		v.StatusID = newSid
-		err := s.Upd(v)
+		err := txTasks.Upd(v)
 		if err != nil {
 			failedUpdIDs = append(failedUpdIDs, v.ID)
 		}
 	}
 	if len(failedUpdIDs) > 0 {
+		tx.Rollback()
 		return errors.New(fmt.Sprint("failed to set status for tasks", failedUpdIDs))
 	}
-	return nil
+	return persistence.TryCommit(tx)
 }
 
 func (s *TasksService) findBySid(sid, pid int64) ([]persistence.Task, error) {
