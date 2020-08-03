@@ -30,13 +30,21 @@ func (s *StatusesService) Del(sid int64, pid int64) error {
 	if err != nil {
 		return err
 	}
-	if len(statuses) == 1 && statuses[0].ID == sid {
+	var statusToBeDel *persistence.Status = nil
+	for _, v := range statuses {
+		if v.ID == sid {
+			statusToBeDel = &v
+			break
+		}
+	}
+	if statusToBeDel == nil {
+		return errEntryNotExists
+	}
+	if len(statuses) == 1 {
 		return errLastStatusDelAttempt
 	}
-	statusToBeDel, err := s.StatusesRepo.Get(sid, pid)
-	if err != nil {
-		return nil
-	}
+
+	// reassign tasks to a sibling status
 	var newSeqNo int
 	if statusToBeDel.SeqNo == 1 {
 		newSeqNo = 2
@@ -54,18 +62,14 @@ func (s *StatusesService) Del(sid int64, pid int64) error {
 	if err != nil {
 		return err
 	}
-	err = s.setSeqNo(sid, pid, len(statuses))
+	err = s.setSeqNo(*statusToBeDel, len(statuses))
 	if err != nil {
 		return err
 	}
 	return s.StatusesRepo.Del(sid, pid)
 }
 
-func (s *StatusesService) setSeqNo(sid int64, pid int64, newSeqNo int) error {
-	targetStatus, err := s.StatusesRepo.Get(sid, pid)
-	if err != nil {
-		return err
-	}
+func (s *StatusesService) setSeqNo(targetStatus persistence.Status, newSeqNo int) error {
 	if targetStatus.SeqNo == newSeqNo {
 		return nil
 	}
@@ -81,7 +85,7 @@ func (s *StatusesService) setSeqNo(sid int64, pid int64, newSeqNo int) error {
 		fIndex = newSeqNo
 		lIndex = targetStatus.SeqNo - 1
 	}
-	toBeMoved, err := s.listBySeqNo(pid, fIndex, lIndex)
+	toBeMoved, err := s.listBySeqNo(targetStatus.PID, fIndex, lIndex)
 	if err != nil {
 		return err
 	}
@@ -130,7 +134,7 @@ func (s *StatusesService) Upd(upd persistence.Status) error {
 		return err
 	}
 	if current.SeqNo != upd.SeqNo {
-		err := s.setSeqNo(upd.ID, upd.PID, upd.SeqNo)
+		err := s.setSeqNo(upd, upd.SeqNo)
 		if err != nil {
 			return err
 		}
@@ -152,6 +156,9 @@ func (s *StatusesService) Add(status persistence.Status) (int64, error) {
 }
 
 func (s *StatusesService) moveStatuses(toBeMoved []persistence.Status, d int) error {
+	if len(toBeMoved) == 0 {
+		return nil
+	}
 	for i := range toBeMoved {
 		toBeMoved[i].SeqNo += d
 	}

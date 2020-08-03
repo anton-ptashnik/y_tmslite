@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"errors"
 	"reflect"
 	"testing"
@@ -28,50 +29,70 @@ func TestStatuses(t *testing.T) {
 }
 
 func (test *statusTests) del(t *testing.T) {
-	pid := int64(0)
-	r := statusesFakeRepo{
-		pid: pid,
-		items: map[int64]persistence.Status{},
+	statuses := map[int64]persistence.Status{
+		1: {
+			ID: 1,
+			Name:  "s1",
+			SeqNo: 1,
+		},
+		2: {
+			ID: 2,
+			Name:  "s2",
+			SeqNo: 2,
+		},
 	}
-	s1 := persistence.Status{
-		PID:   pid,
-		Name:  "s1",
-		SeqNo: 1,
+	delStatusOp := func(sid, pid int64) error {
+		if _, p := statuses[sid]; !p {
+			return errors.New("no entry")
+		}
+		delete(statuses, sid)
+		return nil
 	}
-	s2 := persistence.Status{
-		PID:   pid,
-		Name:  "s2",
-		SeqNo: 2,
+	listStatusOp := func(pid int64) ([]persistence.Status, error) {
+		var res []persistence.Status
+		for _, v := range statuses {
+			res = append(res, v)
+		}
+		return res, nil
 	}
-	sid, _ := r.Add(s1)
-	s1.ID = sid
-	sid, _ = r.Add(s2)
-	s2.ID = sid
-	test.StatusesRepo = r
-
-	err := test.Del(s1.ID, pid)
+	test.StatusesRepo = statusesFakeRepo{
+		delOp: delStatusOp,
+		listOp: listStatusOp,
+	}
+	test.SetTasksStatusOp = func(oldSid int64, newSid int64, pid int64) error {
+		return nil
+	}
+	err := test.Del(2, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Get(s1.ID, r.pid); err == nil {
+	if _, present := statuses[2]; present {
 		t.Error("responded deleted but still present")
 	}
 }
 func (test *statusTests) delLastStatus(t *testing.T) {
-	r := statusesFakeRepo{
-		pid:   0,
-		items: map[int64]persistence.Status{},
+	status := persistence.Status{
+		ID:  1,
+		PID: 1,
 	}
-	newItemID, _ := r.Add(persistence.Status{
-		PID: 0,
-	})
-	test.StatusesRepo = r
-	err := test.Del(newItemID, 0)
+	getStatusOp := func(sid, pid int64) (persistence.Status, error) {
+		return status, nil
+	}
+	listStatusesOp := func(pid int64) ([]persistence.Status, error) {
+		return []persistence.Status{status}, nil
+	}
+	delStatusOp := func(id, pid int64) error {
+		t.Fatal("del request sent to repo")
+		return nil
+	}
+	test.StatusesRepo = statusesFakeRepo{
+		getOp:  getStatusOp,
+		listOp: listStatusesOp,
+		delOp:  delStatusOp,
+	}
+	err := test.Del(status.ID, status.PID)
 	if err == nil {
-		t.Fatal("last status deleted")
-	}
-	if _, err := r.Get(newItemID, r.pid); err != nil {
-		t.Error("responded kept but is missing")
+		t.Fatal("indicated last status deleted")
 	}
 }
 
@@ -80,22 +101,25 @@ func (test *statusTests) upd(t *testing.T) {
 		PID:  0,
 		Name: "testitem",
 	}
-	r := statusesFakeRepo{
-		pid:   status.ID,
-		items: map[int64]persistence.Status{},
+	updStatus := persistence.Status{
+		Name: "updName",
 	}
-	test.StatusesRepo = r
+	test.StatusesRepo = statusesFakeRepo{
+		updOp: func(_status persistence.Status) error {
+			status = _status
+			return nil
+		},
+		getOp: func(sid, pid int64) (persistence.Status, error) {
+			return status, nil
+		},
+	}
 
-	newItemID, _ := r.Add(status)
-	status.ID = newItemID
-	status.Name += "_upd"
-	err := test.Upd(status)
+	err := test.Upd(updStatus)
 	if err != nil {
 		t.Fatal(err)
 	}
-	actualStatus, err := r.Get(status.ID, status.PID)
-	if err != nil || !reflect.DeepEqual(status, actualStatus) {
-		t.Error(err, "expected/actual:", status, actualStatus)
+	if !reflect.DeepEqual(status, updStatus) {
+		t.Error(err, "expected/actual:", updStatus, status)
 	}
 }
 func (test *statusTests) setInvalidSeqNo(t *testing.T) {
@@ -103,71 +127,84 @@ func (test *statusTests) setInvalidSeqNo(t *testing.T) {
 		PID:   0,
 		SeqNo: 1,
 	}
-	r := statusesFakeRepo{
-		pid:   s.PID,
-		items: map[int64]persistence.Status{},
+	test.StatusesRepo = statusesFakeRepo{
+		listOp: func(pid int64) ([]persistence.Status, error) {
+			return []persistence.Status{
+				{},
+			}, nil
+		},
 	}
-	test.StatusesRepo = r
 
-	sid, _ := r.Add(s)
 	newSeqNo := 2
-	err := test.StatusesService.setSeqNo(sid, s.PID, newSeqNo)
+	err := test.StatusesService.setSeqNo(s, newSeqNo)
 	if err == nil {
 		t.Fatal("invalid status seqNo accepted")
 	}
 }
+
 func (test *statusTests) setSeqNo(t *testing.T) {
-	r := statusesFakeRepo{
-		pid:   0,
-		items: map[int64]persistence.Status{},
+	// index=seqNo, ID=value
+	actual := []int64{3,4,5,6}
+	expectedSeq := []int64{5,3,4,6}
+
+	test.StatusesRepo = statusesFakeRepo{
+		updOp: func(status persistence.Status) error {
+			actual[status.SeqNo] = status.ID
+			return nil
+		},
+		listOp: func(pid int64) ([]persistence.Status, error) {
+			var r []persistence.Status
+			for i := range actual {
+				r = append(r, persistence.Status{
+					ID:    actual[i],
+					SeqNo: i,
+				})
+			}
+			return r, nil
+		},
 	}
-	test.StatusesRepo = r
-
-	var statuses []int64
-	for n := 0; n < 5; n++ {
-		id, _ := r.Add(persistence.Status{
-			PID:   r.pid,
-			SeqNo: n,
-		})
-		statuses = append(statuses, id)
+	test.TxInitiator = func() (persistence.Tx, error) {
+		return fakeTx{}, nil
 	}
-
-	newSeqNo := 3
-	expected := statuses[1:4]
-	iToBeMoved := expected[0]
-	copy(expected[:len(expected)-1], expected[1:])
-	expected[len(expected)-1] = iToBeMoved
-
-	err := test.StatusesService.setSeqNo(iToBeMoved, r.pid, newSeqNo)
+	test.StatusesRepoTx = func(tx persistence.Tx) StatusesRepo {
+		return test.StatusesRepo
+	}
+	status := persistence.Status{
+		ID:    5,
+		SeqNo: 2,
+	}
+	err := test.StatusesService.setSeqNo(status, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	actualStatuses, _ := r.List(r.pid)
-	for _, s := range actualStatuses {
-		if s.SeqNo >= len(statuses) || statuses[s.SeqNo] != s.ID {
-			t.Error("expected/found at seqNo:",s.SeqNo, statuses[s.SeqNo], s.ID)
-		}
+	if !reflect.DeepEqual(expectedSeq, actual) {
+		t.Error("ordering mismatch. Expected/actual ([seqNo]=entryID)", expectedSeq, actual)
 	}
-
 }
 
 func (test *statusTests) add(t *testing.T) {
 	status := persistence.Status{
-		ID: 2,
+		ID:   2,
 		Name: "testitem",
 	}
 	var statuses []persistence.Status
-	addStatusOp := func(_status persistence.Status) (int64,error) {
-		statuses = append(statuses, _status)
-		return _status.ID, nil
-	}
-	r := statusesFakeRepo{
-		addOp: addStatusOp,
-	}
-	sid, _ := r.Add(status)
-	test.StatusesRepo = r
 
+	test.StatusesRepo = statusesFakeRepo{
+		addOp: func(_status persistence.Status) (int64, error) {
+			statuses = append(statuses, _status)
+			return _status.ID, nil
+		},
+		listOp: func(pid int64) ([]persistence.Status, error) {
+			return statuses, nil
+		},
+	}
+	test.TxInitiator = func() (persistence.Tx, error) {
+		return fakeTx{}, nil
+	}
+	test.StatusesRepoTx = func(tx persistence.Tx) StatusesRepo {
+		return statusesFakeRepo{}
+	}
 	sid, err := test.Add(status)
 	if err != nil {
 		t.Fatal(err)
@@ -182,28 +219,21 @@ func (test *statusTests) add(t *testing.T) {
 }
 
 type statusesFakeRepo struct {
-	pid   int64
-	items map[int64]persistence.Status
-	addOp func(status persistence.Status) (int64, error)
+	pid    int64
+	items  map[int64]persistence.Status
+	addOp  func(status persistence.Status) (int64, error)
+	getOp  func(sid, pid int64) (persistence.Status, error)
+	listOp func(pid int64) ([]persistence.Status, error)
+	delOp  func(sid, pid int64) error
+	updOp func(status persistence.Status) error
 }
 
 func (s statusesFakeRepo) List(pid int64) ([]persistence.Status, error) {
-	if pid != s.pid {
-		return nil, errors.New("not found")
-	}
-	var res []persistence.Status
-	for _, s := range s.items {
-		res = append(res, s)
-	}
-	return res, nil
+	return s.listOp(pid)
 }
 
 func (s statusesFakeRepo) Del(sid int64, pid int64) error {
-	if pid != s.pid {
-		return errProjectNotFound
-	}
-	delete(s.items, sid)
-	return nil
+	return s.delOp(sid, pid)
 }
 
 func (s statusesFakeRepo) Add(status persistence.Status) (int64, error) {
@@ -211,18 +241,32 @@ func (s statusesFakeRepo) Add(status persistence.Status) (int64, error) {
 }
 
 func (s statusesFakeRepo) Upd(status persistence.Status) error {
-	if _, p := s.items[status.ID]; !p {
-		return errors.New("not found")
-	}
-	s.items[status.ID] = status
-	return nil
+	return s.updOp(status)
 }
 
 func (s statusesFakeRepo) Get(id int64, pid int64) (persistence.Status, error) {
-	v, p := s.items[id]
-	var err error
-	if !p {
-		err = errors.New("not found")
-	}
-	return v, err
+	return s.getOp(id, pid)
+}
+
+type fakeTx struct {
+}
+
+func (f fakeTx) QueryRow(q string, args ...interface{}) *sql.Row {
+	panic("implement me")
+}
+
+func (f fakeTx) Query(q string, args ...interface{}) (*sql.Rows, error) {
+	panic("implement me")
+}
+
+func (f fakeTx) Exec(q string, args ...interface{}) (sql.Result, error) {
+	panic("implement me")
+}
+
+func (f fakeTx) Commit() error {
+	return nil
+}
+
+func (f fakeTx) Rollback() error {
+	return nil
 }
