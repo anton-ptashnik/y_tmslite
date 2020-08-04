@@ -2,7 +2,6 @@
 
 The project serves education purposes for learning backend-side development.
 
-Up-to-date project version is located at `release` branch.
 ## Usage
 API doc: https://app.swaggerhub.com/apis/iDeveloper34/y_tmslite
 
