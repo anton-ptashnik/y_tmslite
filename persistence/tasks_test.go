@@ -23,7 +23,7 @@ func TestTasks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tests := taskTests{}
+	tests := taskTests{*NewTasksRepo(nil)}
 	t.Run("get", tests.getTask(input.tasks))
 	t.Run("list", tests.listTasks(input.p.ID))
 	t.Run("add", tests.addTask(input.p, input.s, input.pri))
