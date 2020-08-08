@@ -35,7 +35,7 @@ func main() {
 	})
 	r.Route("/projects/{pid}/statuses", func(r chi.Router) {
 		r.Post("/", statusesHandler.AddStatus)
-		r.Get("/", statusesHandler.ListTaskStatuses)
+		r.Get("/", statusesHandler.ListStatuses)
 		r.Get("/{sid}", statusesHandler.GetStatus)
 		r.Delete("/{sid}", statusesHandler.DelStatus)
 		r.Put("/{sid}", statusesHandler.UpdStatus)
@@ -56,4 +56,8 @@ func main() {
 	})
 
 	http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(`PORT`)), r)
+}
+
+func abc() {
+
 }

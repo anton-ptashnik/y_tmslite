@@ -14,8 +14,12 @@ var (
 	errLastStatus = errors.New("last status cannot be deleted")
 )
 
+type StatusesService interface {
+	service.StatusesRepo
+}
+
 type StatusesHandler struct {
-	service.StatusesService
+	StatusesService
 }
 
 func (h *StatusesHandler) AddStatus(w http.ResponseWriter, r *http.Request) {
@@ -29,29 +33,35 @@ func (h *StatusesHandler) AddStatus(w http.ResponseWriter, r *http.Request) {
 	} else {
 		createdOk(w, id)
 	}
-
 }
 func (h *StatusesHandler) DelStatus(w http.ResponseWriter, r *http.Request) {
 	pid, _ := strconv.Atoi(chi.URLParam(r, "pid"))
 	sid, _ := strconv.Atoi(chi.URLParam(r, "sid"))
-	if err := h.StatusesService.Del(int64(sid), int64(pid)); err != nil {
-		reqFailed(w, err)
-	} else {
+	err := h.StatusesService.Del(int64(sid), int64(pid))
+	switch err {
+	case errLastStatus:
+		clientErr(w, err)
+	case nil:
 		w.WriteHeader(http.StatusOK)
+	default:
+		reqFailed(w, err)
 	}
 }
 
 func (h *StatusesHandler) UpdStatus(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "sid"))
+	pid, _ := strconv.Atoi(chi.URLParam(r, "pid"))
+
 	var s persistence.Status
 	json.NewDecoder(r.Body).Decode(&s)
 	s.ID = int64(id)
+	s.PID = int64(pid)
 	if err := h.StatusesService.Upd(s); err != nil {
 		reqFailed(w, err)
 	}
 }
 
-func (h *StatusesHandler) ListTaskStatuses(w http.ResponseWriter, r *http.Request) {
+func (h *StatusesHandler) ListStatuses(w http.ResponseWriter, r *http.Request) {
 	pid, _ := strconv.Atoi(chi.URLParam(r, "pid"))
 	res, err := h.StatusesService.List(int64(pid))
 	if err != nil {

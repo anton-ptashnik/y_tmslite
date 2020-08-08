@@ -19,7 +19,7 @@ func NewInj() inj {
 func (i *inj) statusesHandler() middleware.StatusesHandler {
 	r := newStatusesRepo(nil)
 	s := service.StatusesService{r, i.ts.SetTasksStatus, newStatusesRepo, newTx}
-	return middleware.StatusesHandler{s}
+	return middleware.StatusesHandler{&s}
 }
 
 func (i *inj) tasksHandler() middleware.TasksHandler {

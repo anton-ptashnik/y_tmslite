@@ -221,7 +221,3 @@ func (test *tasksHandlerTest) updTask(t *testing.T) {
 		t.Error("indicated ok but seem was not updated, expected/actual:", expectedTask, task)
 	}
 }
-
-func setCtx(r *http.Request, ctx *chi.Context) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, ctx))
-}
