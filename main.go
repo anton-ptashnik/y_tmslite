@@ -23,15 +23,16 @@ func main() {
 	r.Use(chiware.SetHeader("Content-Type", "application/json"))
 
 	inj := NewInj()
+	projectsHandler := inj.projectsHandler()
 	tasksHandler := inj.tasksHandler()
 	statusesHandler := inj.statusesHandler()
 
 	r.Route("/projects", func(r chi.Router) {
-		r.Post("/", middleware.AddProject(statusesHandler.Add))
-		r.Get("/", middleware.ListProjects)
-		r.Get("/{id}", middleware.GetProject)
-		r.Delete("/{id}", middleware.DelProject)
-		r.Put("/{id}", middleware.UpdProject)
+		r.Post("/", projectsHandler.AddProject)
+		r.Get("/", projectsHandler.ListProjects)
+		r.Get("/{id}", projectsHandler.GetProject)
+		r.Delete("/{id}", projectsHandler.DelProject)
+		r.Put("/{id}", projectsHandler.UpdProject)
 	})
 	r.Route("/projects/{pid}/statuses", func(r chi.Router) {
 		r.Post("/", statusesHandler.AddStatus)

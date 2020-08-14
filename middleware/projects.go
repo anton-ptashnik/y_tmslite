@@ -6,46 +6,37 @@ import (
 	"net/http"
 	"strconv"
 	"y_finalproject/persistence"
+	"y_finalproject/service"
 )
 
-var projectsRepo persistence.ProjectsRepo
-
-func initialStatus(pid int64) persistence.Status {
-	return persistence.Status{
-		PID:   pid,
-		Name:  "default",
-		SeqNo: 1,
-	}
+type ProjectsService interface {
+	service.ProjectsRepo
 }
 
-type insertStatusOp func(s persistence.Status) (int64, error)
+type ProjectsHandler struct {
+	ProjectsService
+}
 
-func AddProject(insertOp insertStatusOp) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		//todo add transaction
-		var p persistence.Project
-		json.NewDecoder(r.Body).Decode(&p)
-		id, err := projectsRepo.Add(p)
-		if err == nil {
-			_, err := insertOp(initialStatus(id))
-			if err == nil {
-				createdOk(w, id)
-			}
-		} else {
-			reqFailed(w, err)
-		}
+func (h *ProjectsHandler) AddProject(w http.ResponseWriter, r *http.Request) {
+	var p persistence.Project
+	json.NewDecoder(r.Body).Decode(&p)
+	id, err := h.Add(p)
+	if err == nil {
+		createdOk(w, id)
+	} else {
+		reqFailed(w, err)
 	}
 }
-func DelProject(w http.ResponseWriter, r *http.Request) {
+func (h *ProjectsHandler) DelProject(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	if err := projectsRepo.Del(int64(id)); err != nil {
+	if err := h.Del(int64(id)); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(err.Error()))
 	}
 }
 
-func ListProjects(w http.ResponseWriter, r *http.Request) {
-	projects, err := projectsRepo.List()
+func (h *ProjectsHandler) ListProjects(w http.ResponseWriter, r *http.Request) {
+	projects, err := h.List()
 	if err == nil {
 		json.NewEncoder(w).Encode(projects)
 	} else {
@@ -53,9 +44,9 @@ func ListProjects(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetProject(w http.ResponseWriter, r *http.Request) {
+func (h *ProjectsHandler) GetProject(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	p, err := projectsRepo.Get(int64(id))
+	p, err := h.Get(int64(id))
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 	} else {
@@ -63,12 +54,12 @@ func GetProject(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func UpdProject(w http.ResponseWriter, r *http.Request) {
+func (h *ProjectsHandler) UpdProject(w http.ResponseWriter, r *http.Request) {
 	var p persistence.Project
 	json.NewDecoder(r.Body).Decode(&p)
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	p.ID = int64(id)
-	if projectsRepo.Upd(p) != nil {
+	if h.Upd(p) != nil {
 		w.WriteHeader(http.StatusNotFound)
 	}
 }

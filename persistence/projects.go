@@ -40,3 +40,7 @@ func (r *ProjectsRepo) Del(id int64) error {
 	query := `DELETE FROM projects WHERE id=$1`
 	return verifyModified(db.Exec(query, id))
 }
+
+func NewProjectsRepo(tx Tx) *ProjectsRepo {
+	return &ProjectsRepo{initCtx(tx)}
+}

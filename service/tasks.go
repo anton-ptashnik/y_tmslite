@@ -23,6 +23,7 @@ type TasksService struct {
 }
 
 func (s *TasksService) SetTasksStatus(oldSid int64, newSid int64, pid int64) error {
+	//todo move to a separate unit
 	toBeMoved, err := s.findBySid(oldSid, pid)
 	if err != nil {
 		return err
