@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 	"y_finalproject/persistence"
+	"y_finalproject/service"
 )
 
 type tasksHandlerTest struct {
@@ -21,9 +22,14 @@ type tasksHandlerTest struct {
 type fakeTasksService struct {
 	addOp func(task persistence.Task) (int64, error)
 	listOp func(pid int64) ([]persistence.Task,error)
+	listFOp func(filter service.TaskFilterTemplate) ([]persistence.Task,error)
 	delOp func(id int64, pid int64) error
 	updOp func(task persistence.Task) error
 	getOp func(id int64, pid int64) (persistence.Task,error)
+}
+
+func (f *fakeTasksService) List(filter service.TaskFilterTemplate) ([]persistence.Task, error) {
+	return f.listFOp(filter)
 }
 
 func TestTasks(t *testing.T) {
@@ -34,9 +40,6 @@ func TestTasks(t *testing.T) {
 	t.Run("list", tests.listTasks)
 	t.Run("upd", tests.updTask)
 	t.Run("get", tests.getTask)
-}
-func (f *fakeTasksService) List(pid int64) ([]persistence.Task, error) {
-	return f.listOp(pid)
 }
 
 func (f *fakeTasksService) Del(id int64, pid int64) error {

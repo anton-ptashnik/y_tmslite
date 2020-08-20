@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"y_finalproject/persistence"
 )
 
@@ -46,7 +47,7 @@ func (s *TasksService) SetTasksStatus(oldSid int64, newSid int64, pid int64) err
 }
 
 func (s *TasksService) findBySid(sid, pid int64) ([]persistence.Task, error) {
-	all, err := s.List(pid)
+	all, err := s.TasksRepo.List(pid)
 	if err != nil {
 		return nil, err
 	}
@@ -57,4 +58,44 @@ func (s *TasksService) findBySid(sid, pid int64) ([]persistence.Task, error) {
 		}
 	}
 	return tasks, nil
+}
+
+func (s *TasksService) List(filter TaskFilterTemplate) ([]persistence.Task, error) {
+	tasks, err := s.TasksRepo.List(filter.Pid)
+	if err != nil {
+		return nil, err
+	}
+
+	taskFilter := newTaskFilter(filter)
+
+	var res []persistence.Task
+	for _, task := range tasks {
+		if taskFilter(task) {
+			res = append(res, task)
+		}
+	}
+	return res, nil
+}
+
+type TaskFilterTemplate struct {
+	Pid      int64
+	Name     string
+	Statuses []int64
+}
+
+func newTaskFilter(filter TaskFilterTemplate) func (task persistence.Task) bool {
+	neededStatuses := map[int64]bool{}
+	for _, s := range filter.Statuses {
+		neededStatuses[s] = true
+	}
+	statusFilter := func(sid int64) bool {
+		if len(neededStatuses) == 0 {
+			return true
+		}
+		return neededStatuses[sid]
+	}
+
+	return func(task persistence.Task) bool {
+		return strings.Contains(task.Name, filter.Name) && statusFilter(task.StatusID)
+	}
 }
